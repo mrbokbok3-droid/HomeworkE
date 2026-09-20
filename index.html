@@ -1,0 +1,2364 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#1877f2">
+<title>Chat</title>
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  font-family:Arial,"Noto Sans Bengali",sans-serif;
+  background:#f2f5f9;
+  color:#172033;
+  height:100vh;
+  overflow:hidden
+}
+button,input{font:inherit}
+button{cursor:pointer}
+.hidden{display:none!important}
+
+#lock{
+  width:100%;
+  height:100vh;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  padding:20px;
+  background:linear-gradient(135deg,#edf5ff,#f7fbff)
+}
+
+.lock-box{
+  width:100%;
+  max-width:390px;
+  background:white;
+  padding:32px 25px;
+  border-radius:22px;
+  box-shadow:0 15px 50px #0002;
+  text-align:center
+}
+
+.lock-icon{
+  width:70px;
+  height:70px;
+  margin:auto auto 18px;
+  border-radius:20px;
+  background:#1877f2;
+  color:white;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:32px
+}
+
+.lock-box h1{margin-bottom:8px}
+.lock-box p{
+  color:#6b7280;
+  margin-bottom:20px
+}
+
+#securityCode{
+  width:100%;
+  height:55px;
+  border:1px solid #d8dee8;
+  border-radius:12px;
+  text-align:center;
+  font-size:24px;
+  font-weight:bold;
+  letter-spacing:8px;
+  outline:none
+}
+
+.primary{
+  width:100%;
+  border:0;
+  background:#1877f2;
+  color:white;
+  border-radius:12px;
+  padding:14px;
+  margin-top:12px;
+  font-weight:bold
+}
+
+.error{
+  color:#dc2626;
+  font-size:13px;
+  min-height:20px;
+  margin-top:10px
+}
+
+/* USER ENTRY */
+
+#entry{
+  height:100vh;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  padding:20px
+}
+
+.entry-box{
+  width:100%;
+  max-width:400px;
+  background:white;
+  padding:28px;
+  border-radius:20px;
+  box-shadow:0 15px 45px #0001
+}
+
+.entry-box h2{margin-bottom:8px}
+.entry-box p{
+  color:#6b7280;
+  margin-bottom:20px
+}
+
+.field{
+  width:100%;
+  padding:13px;
+  border:1px solid #d8dee8;
+  border-radius:11px;
+  outline:none;
+  margin-bottom:10px
+}
+
+/* APP */
+
+#app{
+  width:100%;
+  height:100vh;
+  display:flex;
+  background:white
+}
+
+.sidebar{
+  width:350px;
+  flex:none;
+  border-right:1px solid #e2e6ec;
+  display:flex;
+  flex-direction:column;
+  background:white
+}
+
+.side-header{
+  height:68px;
+  padding:12px 15px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  border-bottom:1px solid #eee
+}
+
+.logo{
+  font-size:22px;
+  font-weight:bold
+}
+
+.icon{
+  border:0;
+  background:transparent;
+  padding:9px;
+  border-radius:9px;
+  font-size:18px
+}
+
+.icon:hover{background:#eef2f7}
+
+.search{
+  padding:11px
+}
+
+.search input{
+  width:100%;
+  border:0;
+  background:#f0f2f5;
+  padding:12px 15px;
+  border-radius:22px;
+  outline:none
+}
+
+.tabs{
+  display:flex;
+  border-bottom:1px solid #eee
+}
+
+.tab{
+  flex:1;
+  padding:11px;
+  border:0;
+  background:white;
+  color:#777;
+  font-weight:bold
+}
+
+.tab.active{
+  color:#1877f2;
+  border-bottom:2px solid #1877f2
+}
+
+.user-list{
+  flex:1;
+  overflow:auto
+}
+
+.user{
+  padding:11px 14px;
+  display:flex;
+  align-items:center;
+  gap:11px;
+  cursor:pointer
+}
+
+.user:hover,
+.user.active{
+  background:#f1f5f9
+}
+
+.avatar{
+  width:46px;
+  height:46px;
+  flex:none;
+  border-radius:50%;
+  background:#1877f2;
+  color:white;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  font-weight:bold;
+  object-fit:cover
+}
+
+.user-info{
+  min-width:0;
+  flex:1
+}
+
+.user-name{
+  font-weight:bold;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis
+}
+
+.user-status{
+  color:#777;
+  font-size:12px;
+  margin-top:3px
+}
+
+.online{color:#16a34a}
+
+/* CHAT */
+
+.chat{
+  flex:1;
+  min-width:0;
+  display:flex;
+  flex-direction:column
+}
+
+.chat-header{
+  height:68px;
+  padding:9px 15px;
+  display:flex;
+  align-items:center;
+  gap:10px;
+  border-bottom:1px solid #e2e6ec
+}
+
+.back{
+  display:none
+}
+
+.chat-name{
+  font-weight:bold
+}
+
+.chat-status{
+  font-size:12px;
+  color:#777;
+  margin-top:3px
+}
+
+.messages{
+  flex:1;
+  overflow:auto;
+  padding:18px;
+  display:flex;
+  flex-direction:column;
+  gap:7px;
+  background:#f7f9fc
+}
+
+.empty{
+  margin:auto;
+  text-align:center;
+  color:#777
+}
+
+.message{
+  max-width:72%;
+  padding:9px 12px;
+  border-radius:17px;
+  word-break:break-word
+}
+
+.mine{
+  align-self:flex-end;
+  background:#1877f2;
+  color:white;
+  border-bottom-right-radius:5px
+}
+
+.other{
+  align-self:flex-start;
+  background:#e5e7eb;
+  color:#111827;
+  border-bottom-left-radius:5px
+}
+
+.time{
+  display:block;
+  font-size:10px;
+  opacity:.7;
+  text-align:right;
+  margin-top:4px
+}
+
+.reply-preview{
+  font-size:11px;
+  border-left:3px solid currentColor;
+  padding-left:6px;
+  margin-bottom:5px;
+  opacity:.8
+}
+
+.message-image{
+  max-width:260px;
+  max-height:300px;
+  border-radius:12px
+}
+
+.typing{
+  height:20px;
+  padding-left:18px;
+  color:#777;
+  font-size:12px
+}
+
+.composer{
+  border-top:1px solid #e2e6ec;
+  padding:9px;
+  display:flex;
+  gap:7px;
+  align-items:center
+}
+
+.composer input{
+  flex:1;
+  border:0;
+  outline:none;
+  background:#f0f2f5;
+  border-radius:22px;
+  padding:12px 15px
+}
+
+.send{
+  width:45px;
+  height:45px;
+  border:0;
+  border-radius:50%;
+  background:#1877f2;
+  color:white;
+  font-size:17px
+}
+
+.modal{
+  position:fixed;
+  inset:0;
+  background:#0007;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:20px;
+  z-index:100
+}
+
+.modal-box{
+  width:100%;
+  max-width:420px;
+  background:white;
+  padding:22px;
+  border-radius:18px
+}
+
+.modal-box h3{margin-bottom:15px}
+
+.modal-actions{
+  display:flex;
+  gap:8px;
+  margin-top:12px
+}
+
+.modal-actions button{
+  flex:1;
+  padding:11px;
+  border:0;
+  border-radius:10px
+}
+
+.danger{
+  background:#dc2626;
+  color:white
+}
+
+.secondary{
+  background:#eef2f7
+}
+
+@media(max-width:700px){
+
+  .sidebar{
+    width:100%
+  }
+
+  .chat{
+    display:none
+  }
+
+  #app.chat-open .sidebar{
+    display:none
+  }
+
+  #app.chat-open .chat{
+    display:flex
+  }
+
+  .back{
+    display:block
+  }
+
+  .message{
+    max-width:84%
+  }
+}
+</style>
+</head>
+
+<body>
+
+<!-- SECURITY -->
+
+<section id="lock">
+
+  <div class="lock-box">
+
+    <div class="lock-icon">🔐</div>
+
+    <h1>Security Code</h1>
+
+    <p>আপনার Security Codeটি দিন</p>
+
+    <input
+      id="securityCode"
+      type="password"
+      inputmode="numeric"
+      maxlength="6"
+      autocomplete="off"
+      placeholder="••••••"
+    >
+
+    <button
+      id="unlock"
+      class="primary"
+    >
+      প্রবেশ করুন
+    </button>
+
+    <div
+      id="lockError"
+      class="error"
+    ></div>
+
+  </div>
+
+</section>
+
+
+<!-- USER NAME -->
+
+<section
+  id="entry"
+  class="hidden"
+>
+
+  <div class="entry-box">
+
+    <h2>Chat-এ প্রবেশ করুন</h2>
+
+    <p>
+      আপনার নাম লিখুন। Account বা Password প্রয়োজন নেই।
+    </p>
+
+    <input
+      id="username"
+      class="field"
+      maxlength="30"
+      placeholder="আপনার নাম"
+    >
+
+    <button
+      id="enter"
+      class="primary"
+    >
+      Chat শুরু করুন
+    </button>
+
+    <div
+      id="entryError"
+      class="error"
+    ></div>
+
+  </div>
+
+</section>
+
+
+<!-- APP -->
+
+<div
+  id="app"
+  class="hidden"
+>
+
+  <aside class="sidebar">
+
+    <div class="side-header">
+
+      <div class="logo">
+        Chat
+      </div>
+
+      <div>
+
+        <button
+          id="theme"
+          class="icon"
+          title="Theme"
+        >
+          ◐
+        </button>
+
+        <button
+          id="profile"
+          class="icon"
+          title="Profile"
+        >
+          👤
+        </button>
+
+      </div>
+
+    </div>
+
+
+    <div class="search">
+
+      <input
+        id="search"
+        placeholder="Search users..."
+      >
+
+    </div>
+
+
+    <div class="tabs">
+
+      <button
+        class="tab active"
+        id="usersTab"
+      >
+        Users
+      </button>
+
+      <button
+        class="tab"
+        id="groupsTab"
+      >
+        Groups
+      </button>
+
+    </div>
+
+
+    <div
+      id="userList"
+      class="user-list"
+    ></div>
+
+  </aside>
+
+
+  <main class="chat">
+
+    <div class="chat-header">
+
+      <button
+        id="back"
+        class="icon back"
+      >
+        ←
+      </button>
+
+      <div
+        id="chatAvatar"
+        class="avatar"
+      >
+        ?
+      </div>
+
+      <div>
+
+        <div
+          id="chatName"
+          class="chat-name"
+        >
+          Select a chat
+        </div>
+
+        <div
+          id="chatStatus"
+          class="chat-status"
+        >
+          Start chatting
+        </div>
+
+      </div>
+
+      <div
+        style="margin-left:auto"
+      >
+
+        <button
+          id="mute"
+          class="icon"
+        >
+          🔔
+        </button>
+
+        <button
+          id="more"
+          class="icon"
+        >
+          ⋮
+        </button>
+
+      </div>
+
+    </div>
+
+
+    <div
+      id="messages"
+      class="messages"
+    >
+
+      <div class="empty">
+        একটি user নির্বাচন করুন
+      </div>
+
+    </div>
+
+
+    <div
+      id="typing"
+      class="typing"
+    ></div>
+
+
+    <form
+      id="composer"
+      class="composer"
+    >
+
+      <button
+        type="button"
+        id="emoji"
+        class="icon"
+      >
+        😊
+      </button>
+
+      <input
+        id="message"
+        autocomplete="off"
+        placeholder="মেসেজ লিখুন..."
+      >
+
+      <input
+        id="image"
+        type="file"
+        accept="image/*"
+        class="hidden"
+      >
+
+      <button
+        type="button"
+        id="imageBtn"
+        class="icon"
+      >
+        🖼️
+      </button>
+
+      <button
+        type="submit"
+        class="send"
+      >
+        ➤
+      </button>
+
+    </form>
+
+  </main>
+
+</div>
+
+
+<!-- MODAL -->
+
+<div
+  id="modal"
+  class="modal hidden"
+>
+
+  <div class="modal-box">
+
+    <h3 id="modalTitle"></h3>
+
+    <div id="modalBody"></div>
+
+    <div class="modal-actions">
+
+      <button
+        id="modalClose"
+        class="secondary"
+      >
+        Close
+      </button>
+
+      <button
+        id="modalSave"
+        class="primary"
+        style="margin:0"
+      >
+        Save
+      </button>
+
+    </div>
+
+  </div>
+
+</div>
+
+
+<script type="module">
+
+import {
+  initializeApp
+}
+from
+"https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+
+import {
+  getAuth,
+  signInAnonymously,
+  onAuthStateChanged
+}
+from
+"https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+import {
+  getDatabase,
+  ref,
+  get,
+  set,
+  update,
+  push,
+  remove,
+  onValue,
+  onDisconnect
+}
+from
+"https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+import {
+  getStorage,
+  ref as storageRef,
+  uploadBytes,
+  getDownloadURL
+}
+from
+"https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
+
+
+/* FIREBASE */
+
+const firebaseConfig={
+
+  apiKey:
+  "AIzaSyCdU1xvH8YN24e7FxHM8cno2OOkC5AsF6U",
+
+  authDomain:
+  "webtexsite.firebaseapp.com",
+
+  databaseURL:
+  "https://webtexsite-default-rtdb.firebaseio.com",
+
+  projectId:
+  "webtexsite",
+
+  storageBucket:
+  "webtexsite.firebasestorage.app",
+
+  messagingSenderId:
+  "999767910404",
+
+  appId:
+  "1:999767910404:web:1cf1f40328d46c2714ad51",
+
+  measurementId:
+  "G-HCQ75RZE6Z"
+
+};
+
+
+const app=
+initializeApp(firebaseConfig);
+
+const auth=
+getAuth(app);
+
+const db=
+getDatabase(app);
+
+const storage=
+getStorage(app);
+
+
+/* STATE */
+
+let me=null;
+let profile=null;
+let users=[];
+let groups=[];
+let selected=null;
+let selectedType=null;
+let currentMessages=null;
+let replyMessage=null;
+let activeTab="users";
+let typingTimeout=null;
+
+
+/* HELPERS */
+
+const $=
+id=>document.getElementById(id);
+
+function esc(v){
+
+  return String(v??"")
+    .replace(
+      /[&<>"']/g,
+      x=>({
+        "&":"&amp;",
+        "<":"&lt;",
+        ">":"&gt;",
+        '"':"&quot;",
+        "'":"&#039;"
+      }[x])
+    );
+
+}
+
+function initials(name){
+
+  return (
+    name||
+    "?"
+  )
+  .trim()
+  .charAt(0)
+  .toUpperCase();
+
+}
+
+function conversationId(a,b){
+
+  return [
+    a,
+    b
+  ]
+  .sort()
+  .join("_");
+
+}
+
+
+/* SECURITY CODE */
+
+$("securityCode").oninput=()=>{
+
+  $("securityCode").value=
+    $("securityCode")
+      .value
+      .replace(/\D/g,"")
+      .slice(0,6);
+
+};
+
+
+async function unlock(){
+
+  const code=
+    $("securityCode")
+      .value
+      .trim();
+
+  $("lockError")
+    .textContent="";
+
+
+  if(!/^\d{6}$/.test(code)){
+
+    $("lockError")
+      .textContent=
+      "৬ ডিজিট Security Code দিন।";
+
+    return;
+
+  }
+
+
+  try{
+
+    const snap=
+      await get(
+        ref(
+          db,
+          "settings/securityCode"
+        )
+      );
+
+
+    const saved=
+      snap.val();
+
+
+    if(
+      saved!==null &&
+      String(saved)===code
+    ){
+
+      $("lock")
+        .classList
+        .add("hidden");
+
+      $("entry")
+        .classList
+        .remove("hidden");
+
+    }else{
+
+      $("lockError")
+        .textContent=
+        "Security Code সঠিক নয়।";
+
+    }
+
+  }catch(error){
+
+    console.error(error);
+
+    $("lockError")
+      .textContent=
+      "Security verification ব্যর্থ হয়েছে।";
+
+  }
+
+}
+
+
+$("unlock").onclick=
+unlock;
+
+
+$("securityCode").onkeydown=e=>{
+
+  if(e.key==="Enter")
+    unlock();
+
+};
+
+
+/* USER ENTRY */
+
+$("enter").onclick=
+async()=>{
+
+  const name=
+    $("username")
+      .value
+      .trim();
+
+
+  if(name.length<2){
+
+    $("entryError")
+      .textContent=
+      "কমপক্ষে ২ অক্ষরের নাম দিন।";
+
+    return;
+
+  }
+
+
+  localStorage.setItem(
+    "chatName",
+    name
+  );
+
+
+  try{
+
+    await signInAnonymously(
+      auth
+    );
+
+  }catch(error){
+
+    console.error(error);
+
+    $("entryError")
+      .textContent=
+      "Firebase Anonymous Authentication চালু করুন।";
+
+  }
+
+};
+
+
+/* AUTH */
+
+onAuthStateChanged(
+  auth,
+  async user=>{
+
+    if(!user)
+      return;
+
+
+    me=user;
+
+
+    const savedName=
+      localStorage.getItem(
+        "chatName"
+      )||
+      "User";
+
+
+    profile={
+
+      uid:
+        user.uid,
+
+      name:
+        savedName,
+
+      photo:
+        "",
+
+      online:
+        true,
+
+      showOnline:
+        true
+
+    };
+
+
+    await set(
+      ref(
+        db,
+        "users/"+user.uid
+      ),
+      profile
+    );
+
+
+    const userRef=
+      ref(
+        db,
+        "users/"+user.uid
+      );
+
+
+    onDisconnect(
+      userRef
+    )
+    .update({
+
+      online:false,
+
+      lastSeen:
+        Date.now()
+
+    });
+
+
+    await update(
+      userRef,
+      {
+
+        online:true,
+
+        lastSeen:
+          Date.now()
+
+      }
+    );
+
+
+    $("entry")
+      .classList
+      .add("hidden");
+
+    $("app")
+      .classList
+      .remove("hidden");
+
+
+    listenUsers();
+
+    listenGroups();
+
+  }
+);
+
+
+/* USERS */
+
+function listenUsers(){
+
+  onValue(
+    ref(db,"users"),
+    snap=>{
+
+      users=[];
+
+      snap.forEach(
+        child=>{
+
+          const u=
+            child.val();
+
+          if(
+            u.uid!==
+            me.uid
+          ){
+
+            users.push(u);
+
+          }
+
+        }
+      );
+
+
+      renderList();
+
+    }
+  );
+
+}
+
+
+/* GROUPS */
+
+function listenGroups(){
+
+  onValue(
+    ref(db,"groups"),
+    snap=>{
+
+      groups=[];
+
+      snap.forEach(
+        child=>{
+
+          const g=
+            child.val();
+
+          if(
+            g.members &&
+            g.members[me.uid]
+          ){
+
+            groups.push({
+
+              ...g,
+
+              id:
+                child.key
+
+            });
+
+          }
+
+        }
+      );
+
+
+      if(activeTab==="groups")
+        renderList();
+
+    }
+  );
+
+}
+
+
+/* LIST */
+
+function renderList(){
+
+  const list=
+    $("userList");
+
+  list.innerHTML="";
+
+
+  const query=
+    $("search")
+      .value
+      .trim()
+      .toLowerCase();
+
+
+  const source=
+    activeTab==="users"
+      ? users
+      : groups;
+
+
+  const filtered=
+    source.filter(
+      x=>
+        (x.name||"")
+          .toLowerCase()
+          .includes(query)
+    );
+
+
+  filtered.forEach(
+    x=>{
+
+      const div=
+        document.createElement(
+          "div"
+        );
+
+
+      div.className=
+        "user";
+
+
+      const avatar=
+        x.photo
+
+          ?
+
+          `<img
+            class="avatar"
+            src="${esc(x.photo)}"
+          >`
+
+          :
+
+          `<div class="avatar">
+            ${esc(initials(x.name))}
+          </div>`;
+
+
+      div.innerHTML=`
+
+        ${avatar}
+
+        <div class="user-info">
+
+          <div class="user-name">
+            ${esc(x.name||"User")}
+          </div>
+
+          <div class="user-status ${
+            x.online &&
+            x.showOnline!==false
+              ? "online"
+              : ""
+          }">
+
+            ${
+              activeTab==="users"
+
+                ?
+
+                (
+                  x.online &&
+                  x.showOnline!==false
+                    ? "● Online"
+                    : "Offline"
+                )
+
+                :
+
+                "Group"
+
+            }
+
+          </div>
+
+        </div>
+
+      `;
+
+
+      div.onclick=
+        ()=>openChat(
+          x,
+          activeTab==="users"
+            ? "user"
+            : "group"
+        );
+
+
+      list.appendChild(div);
+
+    }
+  );
+
+
+  if(!filtered.length){
+
+    list.innerHTML=
+      `<div class="empty">
+        ${
+          activeTab==="users"
+            ? "কোনো user পাওয়া যায়নি"
+            : "কোনো group নেই"
+        }
+      </div>`;
+
+  }
+
+}
+
+
+$("search").oninput=
+renderList;
+
+
+$("usersTab").onclick=()=>{
+
+  activeTab="users";
+
+  $("usersTab")
+    .classList
+    .add("active");
+
+  $("groupsTab")
+    .classList
+    .remove("active");
+
+  renderList();
+
+};
+
+
+$("groupsTab").onclick=()=>{
+
+  activeTab="groups";
+
+  $("groupsTab")
+    .classList
+    .add("active");
+
+  $("usersTab")
+    .classList
+    .remove("active");
+
+  renderList();
+
+};
+
+
+/* OPEN CHAT */
+
+function openChat(
+  target,
+  type
+){
+
+  selected=
+    target;
+
+  selectedType=
+    type;
+
+
+  $("app")
+    .classList
+    .add("chat-open");
+
+
+  $("chatName")
+    .textContent=
+      target.name||"Group";
+
+
+  $("chatStatus")
+    .textContent=
+      type==="user"
+
+        ?
+
+        (
+          target.online &&
+          target.showOnline!==false
+            ? "● Online"
+            : "Offline"
+        )
+
+        :
+
+        "Group";
+
+
+  $("chatAvatar")
+    .textContent=
+      initials(
+        target.name
+      );
+
+
+  listenMessages();
+
+}
+
+
+/* MESSAGE LISTENER */
+
+function listenMessages(){
+
+  if(!selected)
+    return;
+
+
+  const id=
+    selectedType==="user"
+
+      ?
+
+      conversationId(
+        me.uid,
+        selected.uid
+      )
+
+      :
+
+      selected.id;
+
+
+  onValue(
+    ref(
+      db,
+      "messages/"+id
+    ),
+
+    snap=>{
+
+      $("messages")
+        .innerHTML="";
+
+
+      if(!snap.exists()){
+
+        $("messages")
+          .innerHTML=
+          `<div class="empty">
+            এখনো কোনো message নেই।
+          </div>`;
+
+        return;
+
+      }
+
+
+      snap.forEach(
+        child=>
+          drawMessage(
+            child.key,
+            child.val()
+          )
+      );
+
+
+      $("messages")
+        .scrollTop=
+          $("messages")
+            .scrollHeight;
+
+
+      markSeen(id);
+
+    }
+  );
+
+}
+
+
+/* DRAW MESSAGE */
+
+function drawMessage(
+  id,
+  m
+){
+
+  const mine=
+    m.senderId===
+    me.uid;
+
+
+  const div=
+    document.createElement(
+      "div"
+    );
+
+
+  div.className=
+    "message "+
+    (
+      mine
+        ? "mine"
+        : "other"
+    );
+
+
+  let body="";
+
+
+  if(m.replyText){
+
+    body+=`
+      <div class="reply-preview">
+        ${esc(m.replyText)}
+      </div>
+    `;
+
+  }
+
+
+  if(
+    m.type==="image"
+  ){
+
+    body+=`
+      <img
+        class="message-image"
+        src="${esc(m.url)}"
+      >
+    `;
+
+  }else{
+
+    body+=
+      esc(
+        m.text||""
+      );
+
+  }
+
+
+  const time=
+    new Date(
+      m.createdAt||Date.now()
+    )
+    .toLocaleTimeString(
+      [],
+      {
+        hour:"2-digit",
+        minute:"2-digit"
+      }
+    );
+
+
+  let status="";
+
+
+  if(mine){
+
+    status=
+      m.seen
+        ? " ✓✓"
+        : " ✓";
+
+  }
+
+
+  div.innerHTML=
+    body+
+
+    `<span class="time">
+      ${time}${status}
+    </span>`;
+
+
+  div.oncontextmenu=e=>{
+
+    e.preventDefault();
+
+    messageMenu(
+      id,
+      m,
+      mine
+    );
+
+  };
+
+
+  $("messages")
+    .appendChild(div);
+
+}
+
+
+/* MESSAGE MENU */
+
+function messageMenu(
+  id,
+  m,
+  mine
+){
+
+  let html=`
+
+    <button
+      id="replyBtn"
+      class="secondary"
+      style="width:100%;margin-bottom:8px"
+    >
+      ↩ Reply
+    </button>
+
+  `;
+
+
+  if(mine){
+
+    html+=`
+
+      <button
+        id="deleteBtn"
+        class="danger"
+        style="width:100%"
+      >
+        Delete
+      </button>
+
+    `;
+
+  }
+
+
+  openModal(
+    "Message Options",
+    html,
+    ()=>{
+
+      $("replyBtn").onclick=
+        ()=>{
+
+          replyMessage=
+            m;
+
+          closeModal();
+
+          $("message")
+            .focus();
+
+        };
+
+
+      $("deleteBtn")?.addEventListener(
+        "click",
+        async()=>{
+
+          const id2=
+            selectedType==="user"
+
+              ?
+
+              conversationId(
+                me.uid,
+                selected.uid
+              )
+
+              :
+
+              selected.id;
+
+
+          await remove(
+            ref(
+              db,
+              "messages/"+
+              id2+
+              "/"+
+              id
+            )
+          );
+
+
+          closeModal();
+
+        }
+      );
+
+    }
+  );
+
+}
+
+
+/* SEEN */
+
+async function markSeen(
+  id
+){
+
+  const snap=
+    await get(
+      ref(
+        db,
+        "messages/"+id
+      )
+    );
+
+
+  if(!snap.exists())
+    return;
+
+
+  const changes={};
+
+
+  snap.forEach(
+    child=>{
+
+      const m=
+        child.val();
+
+
+      if(
+        m.receiverId===
+        me.uid &&
+        !m.seen
+      ){
+
+        changes[
+          child.key+
+          "/seen"
+        ]=true;
+
+      }
+
+    }
+  );
+
+
+  if(
+    Object.keys(changes)
+      .length
+  ){
+
+    await update(
+      ref(
+        db,
+        "messages/"+id
+      ),
+      changes
+    );
+
+  }
+
+}
+
+
+/* SEND */
+
+$("composer").onsubmit=
+async e=>{
+
+  e.preventDefault();
+
+
+  if(!selected)
+    return;
+
+
+  const text=
+    $("message")
+      .value
+      .trim();
+
+
+  if(!text)
+    return;
+
+
+  const chatId=
+    selectedType==="user"
+
+      ?
+
+      conversationId(
+        me.uid,
+        selected.uid
+      )
+
+      :
+
+      selected.id;
+
+
+  const newRef=
+    push(
+      ref(
+        db,
+        "messages/"+chatId
+      )
+    );
+
+
+  await set(
+    newRef,
+    {
+
+      id:
+        newRef.key,
+
+      senderId:
+        me.uid,
+
+      receiverId:
+        selectedType==="user"
+          ? selected.uid
+          : "",
+
+      text:
+        text,
+
+      type:
+        "text",
+
+      status:
+        "sent",
+
+      seen:
+        false,
+
+      createdAt:
+        Date.now(),
+
+      replyText:
+        replyMessage?.text||
+        ""
+
+    }
+  );
+
+
+  $("message")
+    .value="";
+
+
+  replyMessage=
+    null;
+
+};
+
+
+/* EMOJI */
+
+$("emoji").onclick=
+()=>{
+
+  $("message")
+    .value+=" 😊";
+
+  $("message")
+    .focus();
+
+};
+
+
+/* IMAGE */
+
+$("imageBtn").onclick=
+()=>{
+
+  $("image")
+    .click();
+
+};
+
+
+$("image").onchange=
+async()=>{
+
+  const file=
+    $("image")
+      .files[0];
+
+
+  if(!file||!selected)
+    return;
+
+
+  if(
+    file.size>
+    5*1024*1024
+  ){
+
+    alert(
+      "Image সর্বোচ্চ 5MB হতে পারবে।"
+    );
+
+    return;
+
+  }
+
+
+  try{
+
+    const path=
+      "chatImages/"+
+      me.uid+
+      "/"+
+      Date.now()+
+      "_"+
+      file.name
+        .replace(
+          /[^\w.-]/g,
+          "_"
+        );
+
+
+    const r=
+      storageRef(
+        storage,
+        path
+      );
+
+
+    await uploadBytes(
+      r,
+      file
+    );
+
+
+    const url=
+      await getDownloadURL(r);
+
+
+    const chatId=
+      selectedType==="user"
+
+        ?
+
+        conversationId(
+          me.uid,
+          selected.uid
+        )
+
+        :
+
+        selected.id;
+
+
+    const newRef=
+      push(
+        ref(
+          db,
+          "messages/"+chatId
+        )
+      );
+
+
+    await set(
+      newRef,
+      {
+
+        id:
+          newRef.key,
+
+        senderId:
+          me.uid,
+
+        receiverId:
+          selectedType==="user"
+            ? selected.uid
+            : "",
+
+        type:
+          "image",
+
+        url:
+          url,
+
+        createdAt:
+          Date.now(),
+
+        seen:
+          false
+
+      }
+    );
+
+
+  }catch(error){
+
+    console.error(error);
+
+    alert(
+      "Image upload ব্যর্থ হয়েছে।"
+    );
+
+  }
+
+
+  $("image")
+    .value="";
+
+};
+
+
+/* PROFILE */
+
+$("profile").onclick=
+()=>{
+
+  openModal(
+
+    "Profile",
+
+    `
+
+      <input
+        id="profileName"
+        class="field"
+        value="${esc(profile?.name||"")}"
+        placeholder="Profile name"
+      >
+
+      <input
+        id="profilePhoto"
+        class="field"
+        value="${esc(profile?.photo||"")}"
+        placeholder="Profile photo URL"
+      >
+
+      <label>
+        <input
+          id="showOnline"
+          type="checkbox"
+          checked
+        >
+        Online status দেখাবেন
+      </label>
+
+    `,
+
+    async()=>{
+
+      const name=
+        $("profileName")
+          .value
+          .trim();
+
+
+      const photo=
+        $("profilePhoto")
+          .value
+          .trim();
+
+
+      const showOnline=
+        $("showOnline")
+          .checked;
+
+
+      profile={
+        ...profile,
+        name,
+        photo,
+        showOnline
+      };
+
+
+      localStorage.setItem(
+        "chatName",
+        name
+      );
+
+
+      await update(
+        ref(
+          db,
+          "users/"+me.uid
+        ),
+        {
+          name,
+          photo,
+          showOnline
+        }
+      );
+
+
+      closeModal();
+
+      renderList();
+
+    }
+
+  );
+
+};
+
+
+/* MORE */
+
+$("more").onclick=
+()=>{
+
+  if(
+    !selected ||
+    selectedType!=="user"
+  )
+    return;
+
+
+  openModal(
+
+    "Privacy",
+
+    `
+
+      <button
+        id="blockUser"
+        class="secondary"
+        style="width:100%;padding:12px;border:0;border-radius:10px;margin-bottom:8px"
+      >
+        Block User
+      </button>
+
+      <button
+        id="reportUser"
+        class="danger"
+        style="width:100%;padding:12px;border:0;border-radius:10px"
+      >
+        Report User
+      </button>
+
+    `,
+
+    async()=>{
+
+      $("blockUser").onclick=
+        async()=>{
+
+          await set(
+            ref(
+              db,
+              "blocks/"+
+              me.uid+
+              "/"+
+              selected.uid
+            ),
+            true
+          );
+
+
+          closeModal();
+
+        };
+
+
+      $("reportUser").onclick=
+        async()=>{
+
+          await push(
+            ref(
+              db,
+              "reports"
+            ),
+            {
+
+              type:
+                "user",
+
+              reporterId:
+                me.uid,
+
+              reportedUserId:
+                selected.uid,
+
+              createdAt:
+                Date.now()
+
+            }
+          );
+
+
+          closeModal();
+
+          alert(
+            "Report পাঠানো হয়েছে।"
+          );
+
+        };
+
+    }
+
+  );
+
+};
+
+
+/* MUTE */
+
+$("mute").onclick=
+()=>{
+
+  if(!selected)
+    return;
+
+
+  const id=
+    selectedType==="user"
+
+      ?
+
+      conversationId(
+        me.uid,
+        selected.uid
+      )
+
+      :
+
+      selected.id;
+
+
+  const key=
+    "mute_"+id;
+
+
+  const value=
+    localStorage.getItem(key)
+      !=="true";
+
+
+  localStorage.setItem(
+    key,
+    value
+  );
+
+
+  $("mute")
+    .textContent=
+      value
+        ? "🔕"
+        : "🔔";
+
+};
+
+
+/* THEME */
+
+$("theme").onclick=
+()=>{
+
+  document.body.style.background=
+    document.body.style.background
+      ? ""
+      : "#111827";
+
+};
+
+
+/* MOBILE BACK */
+
+$("back").onclick=
+()=>{
+
+  $("app")
+    .classList
+    .remove("chat-open");
+
+  selected=null;
+
+};
+
+
+/* MODAL */
+
+function openModal(
+  title,
+  body,
+  ready
+){
+
+  $("modalTitle")
+    .textContent=
+      title;
+
+  $("modalBody")
+    .innerHTML=
+      body;
+
+  $("modal")
+    .classList
+    .remove("hidden");
+
+
+  $("modalSave").onclick=
+    ()=>ready?.();
+
+}
+
+
+function closeModal(){
+
+  $("modal")
+    .classList
+    .add("hidden");
+
+}
+
+
+$("modalClose").onclick=
+closeModal;
+
+</script>
+
+</body>
+</html>
