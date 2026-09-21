@@ -1,0 +1,4344 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#1877f2">
+<title>Chat</title>
+
+<style>
+*{box-sizing:border-box}
+html,body{
+ margin:0;width:100%;height:100%;
+ font-family:Arial,"Noto Sans Bengali",sans-serif;
+ background:#f3f6fb;color:#182230
+}
+body.dark{background:#111827;color:#f3f4f6}
+button,input,textarea{font:inherit}
+button{cursor:pointer}
+.hidden{display:none!important}
+
+.lock-wrap,.entry-wrap{
+ min-height:100dvh;display:flex;align-items:center;justify-content:center;
+ padding:18px;background:linear-gradient(135deg,#edf4ff,#f8fbff)
+}
+.lock-card,.entry-card{
+ width:100%;max-width:410px;background:#fff;border-radius:24px;
+ padding:30px 25px;box-shadow:0 18px 55px #244a7d18;text-align:center
+}
+.dark .lock-card,.dark .entry-card,.dark .modal-card{
+ background:#172033;color:#fff
+}
+.lock-icon{
+ width:72px;height:72px;border-radius:22px;background:#1877f2;
+ color:#fff;display:grid;place-items:center;font-size:32px;
+ margin:auto auto 18px
+}
+h1,h2,h3{margin-top:0}
+.lock-card p,.entry-card p{color:#6b7280}
+
+.code{
+ width:100%;height:56px;border:1.5px solid #d7deea;
+ border-radius:14px;text-align:center;font-size:24px;
+ font-weight:700;letter-spacing:9px;outline:0
+}
+.code:focus{
+ border-color:#1877f2;
+ box-shadow:0 0 0 4px #1877f21a
+}
+
+.primary{
+ width:100%;height:50px;border:0;border-radius:13px;
+ background:#1877f2;color:#fff;font-weight:700;margin-top:12px
+}
+.primary:hover{filter:brightness(.96)}
+.secondary{
+ border:0;border-radius:11px;padding:11px 14px;
+ background:#eef2f7;color:#182230
+}
+.danger{background:#dc2626!important;color:#fff!important}
+.success-btn{background:#16a34a!important;color:#fff!important}
+
+.err{
+ min-height:20px;color:#dc2626;font-size:13px;margin-top:10px
+}
+.success{
+ color:#16a34a;font-size:13px;margin-top:10px
+}
+
+.field{
+ width:100%;padding:13px 14px;border:1px solid #d8dee8;
+ border-radius:12px;outline:0;margin-bottom:10px;background:#fff
+}
+.field:focus{border-color:#1877f2}
+.dark .field{
+ background:#111827;color:#fff;border-color:#374151
+}
+
+.app{
+ width:100%;height:100dvh;display:flex;overflow:hidden;background:#fff
+}
+.dark .app{background:#111827}
+
+.sidebar{
+ width:350px;border-right:1px solid #e2e6ec;
+ display:flex;flex-direction:column;background:#fff;flex:none
+}
+.dark .sidebar,.dark .chat{background:#111827;border-color:#293344}
+
+.side-head{
+ height:68px;padding:12px 15px;display:flex;
+ align-items:center;justify-content:space-between;
+ border-bottom:1px solid #e5e7eb
+}
+.brand{font-size:22px;font-weight:800}
+.head-actions{display:flex;gap:5px}
+.icon-btn{
+ border:0;background:transparent;border-radius:10px;
+ padding:9px;font-size:19px
+}
+.icon-btn:hover{background:#eef2f7}
+.dark .icon-btn:hover{background:#263247}
+
+.search{padding:11px}
+.search input{
+ width:100%;border:0;background:#f0f2f5;
+ border-radius:22px;padding:11px 15px;outline:0
+}
+.dark .search input{
+ background:#202b3d;color:#fff
+}
+
+.tabs{display:flex;padding:0 8px;border-bottom:1px solid #eee}
+.tab{
+ flex:1;border:0;background:transparent;padding:11px 4px;
+ color:#6b7280;font-weight:700
+}
+.tab.active{color:#1877f2;border-bottom:2px solid #1877f2}
+
+.list{flex:1;overflow:auto}
+.item{
+ display:flex;gap:11px;padding:11px 14px;
+ align-items:center;cursor:pointer
+}
+.item:hover{background:#f1f5f9}
+.dark .item:hover{background:#1c2738}
+
+.avatar{
+ width:46px;height:46px;border-radius:50%;
+ object-fit:cover;background:#1877f2;color:#fff;
+ display:grid;place-items:center;font-weight:800;flex:none
+}
+.chat-head .avatar{width:42px;height:42px}
+
+.item-main{min-width:0;flex:1}
+.item-name{
+ font-weight:700;white-space:nowrap;
+ overflow:hidden;text-overflow:ellipsis
+}
+.item-sub{
+ font-size:12px;color:#7b8491;margin-top:3px;
+ white-space:nowrap;overflow:hidden;text-overflow:ellipsis
+}
+
+.unread{
+ min-width:20px;height:20px;padding:0 6px;
+ border-radius:20px;background:#1877f2;color:#fff;
+ display:grid;place-items:center;font-size:11px;font-weight:700
+}
+
+.online-dot{
+ width:9px;height:9px;border-radius:50%;
+ background:#16a34a;display:inline-block
+}
+
+.chat{
+ flex:1;min-width:0;display:flex;flex-direction:column;background:#fff
+}
+.chat-head{
+ height:68px;padding:9px 15px;border-bottom:1px solid #e2e6ec;
+ display:flex;align-items:center;gap:11px;flex:none
+}
+.back{display:none}
+.chat-title{font-weight:800}
+.chat-sub{font-size:12px;color:#7b8491;margin-top:3px}
+
+.messages{
+ flex:1;overflow:auto;padding:18px;display:flex;
+ flex-direction:column;gap:6px;background:#f7f9fc
+}
+.dark .messages{background:#0f1722}
+
+.message-wrap{
+ display:flex;flex-direction:column
+}
+.message-wrap.mine{align-items:flex-end}
+.message-wrap.theirs{align-items:flex-start}
+
+.bubble{
+ max-width:min(72%,520px);padding:9px 12px;
+ border-radius:17px;line-height:1.4;
+ word-break:break-word;position:relative
+}
+.mine{
+ align-self:flex-end;background:#1877f2;color:#fff;
+ border-bottom-right-radius:5px
+}
+.theirs{
+ align-self:flex-start;background:#e5e7eb;color:#111827;
+ border-bottom-left-radius:5px
+}
+.dark .theirs{background:#273244;color:#f3f4f6}
+
+.meta{
+ display:block;font-size:10px;opacity:.68;
+ margin-top:4px;text-align:right
+}
+.reply{
+ border-left:3px solid currentColor;opacity:.8;
+ padding-left:7px;font-size:11px;margin-bottom:5px
+}
+.msg-img{
+ max-width:260px;max-height:300px;
+ border-radius:12px;display:block
+}
+.msg-deleted{font-style:italic;opacity:.65}
+
+.typing{
+ height:19px;padding-left:18px;
+ color:#7b8491;font-size:12px;flex:none
+}
+.composer{
+ border-top:1px solid #e2e6ec;padding:9px;
+ display:flex;gap:7px;align-items:center;flex:none
+}
+.composer input{
+ flex:1;border:0;outline:0;background:#f0f2f5;
+ border-radius:22px;padding:12px 15px
+}
+.dark .composer input{
+ background:#202b3d;color:#fff
+}
+.send{
+ width:44px;height:44px;border:0;border-radius:50%;
+ background:#1877f2;color:#fff;font-size:17px;flex:none
+}
+
+.reply-bar{
+ display:none;padding:7px 12px;
+ border-top:1px solid #e2e6ec;
+ background:#f8fafc;font-size:12px
+}
+.reply-bar.show{display:flex;align-items:center;gap:8px}
+.reply-text{flex:1;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.reply-close{border:0;background:transparent;font-size:18px}
+
+.empty{margin:auto;text-align:center;color:#7b8491;padding:30px}
+
+.modal{
+ position:fixed;inset:0;background:#0007;
+ display:grid;place-items:center;padding:18px;z-index:50
+}
+.modal-card{
+ width:100%;max-width:450px;background:#fff;
+ border-radius:18px;padding:20px;
+ max-height:90vh;overflow:auto
+}
+.modal-actions{display:flex;gap:8px;margin-top:12px}
+.modal-actions button{flex:1}
+
+.member-list{
+ max-height:260px;overflow:auto;
+ border:1px solid #e5e7eb;border-radius:12px;
+ padding:5px;margin-top:8px
+}
+.member-row{
+ display:flex;align-items:center;gap:8px;
+ padding:8px;border-bottom:1px solid #eee
+}
+.member-row:last-child{border-bottom:0}
+.member-row .member-info{flex:1;min-width:0}
+
+.toast{
+ position:fixed;left:50%;bottom:22px;
+ transform:translateX(-50%);
+ background:#182230;color:#fff;padding:10px 15px;
+ border-radius:12px;z-index:100;display:none;
+ max-width:90%;text-align:center
+}
+
+.admin-panel{
+ position:fixed;inset:0;background:#f4f7fb;
+ z-index:40;overflow:auto;padding:18px
+}
+.dark .admin-panel{background:#111827}
+.admin-box{max-width:1100px;margin:auto}
+.admin-header{
+ background:#fff;border-radius:18px;padding:16px;
+ display:flex;align-items:center;justify-content:space-between;
+ margin-bottom:15px
+}
+.dark .admin-header,.dark .admin-card{background:#172033}
+.admin-grid{
+ display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+ gap:15px
+}
+.admin-card{
+ background:#fff;border-radius:18px;padding:18px
+}
+.admin-row{
+ padding:10px 0;border-bottom:1px solid #e5e7eb;
+ display:flex;align-items:center;justify-content:space-between;
+ gap:10px
+}
+.admin-row:last-child{border-bottom:0}
+.small{font-size:12px;color:#7b8491}
+.admin-actions{display:flex;gap:5px;flex-wrap:wrap}
+.admin-actions button{padding:7px 9px;font-size:12px}
+
+.status-badge{
+ display:inline-block;padding:3px 7px;
+ border-radius:20px;font-size:10px;font-weight:700
+}
+.status-online{background:#dcfce7;color:#15803d}
+.status-offline{background:#f1f5f9;color:#64748b}
+
+.group-create{
+ margin:10px;padding:11px;
+ border:0;border-radius:12px;
+ background:#1877f2;color:#fff;width:calc(100% - 20px);
+ font-weight:700
+}
+
+@media(max-width:760px){
+ .sidebar{width:100%;border:0}
+ .chat{display:none}
+ .app.chat-open .sidebar{display:none}
+ .app.chat-open .chat{display:flex}
+ .back{display:block}
+ .bubble{max-width:84%}
+ .admin-grid{grid-template-columns:1fr}
+ .admin-panel{padding:10px}
+}
+</style>
+</head>
+
+<body>
+
+<!-- ================= SECURITY ================= -->
+
+<section id="lock" class="lock-wrap">
+ <div class="lock-card">
+
+  <div class="lock-icon">🔐</div>
+
+  <h1>Security Code</h1>
+
+  <p>আপনার Security Codeটি দিন</p>
+
+  <input
+   id="securityCode"
+   class="code"
+   type="password"
+   inputmode="numeric"
+   maxlength="6"
+   autocomplete="off"
+   placeholder="••••••"
+  >
+
+  <button id="unlock" class="primary">
+   প্রবেশ করুন
+  </button>
+
+  <button
+   id="adminLoginOpen"
+   class="secondary"
+   style="width:100%;margin-top:10px"
+  >
+   Admin Login
+  </button>
+
+  <div id="lockErr" class="err"></div>
+
+ </div>
+</section>
+
+
+<!-- ================= USERNAME ================= -->
+
+<section id="usernameEntry" class="entry-wrap hidden">
+
+ <div class="entry-card">
+
+  <h2>Chat-এ প্রবেশ করুন</h2>
+
+  <p>
+   আপনার username দিন। কোনো account password প্রয়োজন নেই।
+  </p>
+
+  <input
+   id="username"
+   class="field"
+   maxlength="30"
+   placeholder="আপনার নাম"
+  >
+
+  <button id="enterChat" class="primary">
+   চ্যাট শুরু করুন
+  </button>
+
+  <div id="entryErr" class="err"></div>
+
+ </div>
+
+</section>
+
+
+<!-- ================= MAIN APP ================= -->
+
+<div id="app" class="app hidden">
+
+ <aside class="sidebar">
+
+  <div class="side-head">
+
+   <div class="brand">Chat</div>
+
+   <div class="head-actions">
+
+    <button class="icon-btn" id="themeBtn">
+     ◐
+    </button>
+
+    <button class="icon-btn" id="profileBtn">
+     👤
+    </button>
+
+   </div>
+
+  </div>
+
+  <div class="search">
+   <input id="search" placeholder="Search users...">
+  </div>
+
+  <div class="tabs">
+
+   <button class="tab active" data-tab="users">
+    Users
+   </button>
+
+   <button class="tab" data-tab="groups">
+    Groups
+   </button>
+
+  </div>
+
+  <button id="createGroupBtn" class="group-create">
+   ＋ Create Group
+  </button>
+
+  <div id="list" class="list"></div>
+
+ </aside>
+
+
+ <main class="chat">
+
+  <div class="chat-head">
+
+   <button id="back" class="icon-btn back">
+    ←
+   </button>
+
+   <div id="chatAvatar" class="avatar">
+    ?
+   </div>
+
+   <div style="min-width:0">
+
+    <div id="chatTitle" class="chat-title">
+     একটি chat নির্বাচন করুন
+    </div>
+
+    <div id="chatSub" class="chat-sub">
+     User বা Group নির্বাচন করুন
+    </div>
+
+   </div>
+
+   <div
+    style="margin-left:auto;display:flex;gap:4px"
+   >
+
+    <button id="muteBtn" class="icon-btn">
+     🔔
+    </button>
+
+    <button id="moreBtn" class="icon-btn">
+     ⋮
+    </button>
+
+   </div>
+
+  </div>
+
+
+  <div id="messages" class="messages">
+
+   <div class="empty">
+    একজন user বা একটি group নির্বাচন করুন
+   </div>
+
+  </div>
+
+
+  <div id="typing" class="typing"></div>
+
+
+  <div id="replyBar" class="reply-bar">
+
+   <div class="reply-text">
+    <b>Reply:</b>
+    <span id="replyPreview"></span>
+   </div>
+
+   <button id="replyClose" class="reply-close">
+    ×
+   </button>
+
+  </div>
+
+
+  <form id="composer" class="composer">
+
+   <button
+    type="button"
+    class="icon-btn"
+    id="emojiBtn"
+   >
+    😊
+   </button>
+
+   <input
+    id="message"
+    autocomplete="off"
+    placeholder="মেসেজ লিখুন..."
+   >
+
+   <input
+    id="imageFile"
+    type="file"
+    accept="image/*"
+    class="hidden"
+   >
+
+   <button
+    type="button"
+    class="icon-btn"
+    id="imageBtn"
+   >
+    🖼️
+   </button>
+
+   <button class="send" type="submit">
+    ➤
+   </button>
+
+  </form>
+
+ </main>
+
+</div>
+
+
+<!-- ================= MODAL ================= -->
+
+<div id="modal" class="modal hidden">
+
+ <div class="modal-card">
+
+  <h3 id="modalTitle"></h3>
+
+  <div id="modalBody"></div>
+
+  <div class="modal-actions">
+
+   <button id="modalCancel" class="secondary">
+    বন্ধ করুন
+   </button>
+
+   <button
+    id="modalSave"
+    class="primary"
+    style="margin:0"
+   >
+    Save
+   </button>
+
+  </div>
+
+ </div>
+
+</div>
+
+
+<!-- ================= ADMIN PANEL ================= -->
+
+<section id="adminPanel" class="admin-panel hidden">
+
+ <div class="admin-box">
+
+  <div class="admin-header">
+
+   <div>
+
+    <h2 style="margin:0">
+     Admin Panel
+    </h2>
+
+    <div class="small">
+     Admin UID:
+     nG2sU5WdWXbkpfEkV1RQ95lAQA92
+    </div>
+
+   </div>
+
+   <button
+    id="adminLogout"
+    class="danger secondary"
+   >
+    Logout
+   </button>
+
+  </div>
+
+
+  <div class="admin-grid">
+
+   <!-- SECURITY CODE -->
+
+   <div class="admin-card">
+
+    <h3>Security Code</h3>
+
+    <p class="small">
+     নতুন ৬ সংখ্যার Security Code সেট করুন।
+    </p>
+
+    <input
+     id="newSecurityCode"
+     class="field"
+     maxlength="6"
+     inputmode="numeric"
+     placeholder="নতুন ৬ ডিজিট"
+    >
+
+    <button
+     id="changeSecurityCode"
+     class="primary"
+    >
+     Security Code পরিবর্তন
+    </button>
+
+    <div
+     id="codeChangeMsg"
+     class="small"
+     style="margin-top:10px"
+    ></div>
+
+   </div>
+
+
+   <!-- USERS -->
+
+   <div class="admin-card">
+
+    <h3>Users</h3>
+
+    <input
+     id="adminUserSearch"
+     class="field"
+     placeholder="Search user..."
+    >
+
+    <div id="adminUsers"></div>
+
+   </div>
+
+
+   <!-- GROUPS -->
+
+   <div class="admin-card">
+
+    <h3>Groups</h3>
+
+    <div id="adminGroups"></div>
+
+   </div>
+
+
+   <!-- REPORTS -->
+
+   <div class="admin-card">
+
+    <h3>Reports</h3>
+
+    <div id="adminReports"></div>
+
+   </div>
+
+  </div>
+
+ </div>
+
+</section>
+
+
+<div id="toast" class="toast"></div>
+
+
+<script type="module">
+
+/* =========================================================
+   FIREBASE IMPORTS
+========================================================= */
+
+import {
+ initializeApp
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+
+import {
+ getAuth,
+ signInAnonymously,
+ signInWithEmailAndPassword,
+ signOut,
+ onAuthStateChanged
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+import {
+ getDatabase,
+ ref,
+ set,
+ push,
+ onValue,
+ update,
+ remove,
+ get,
+ onDisconnect
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+import {
+ getStorage,
+ ref as storageRef,
+ uploadBytes,
+ getDownloadURL
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
+
+import {
+ getFunctions,
+ httpsCallable
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-functions.js";
+
+
+/* =========================================================
+   FIREBASE CONFIG
+========================================================= */
+
+const firebaseConfig={
+ apiKey:"AIzaSyCd1UvxH8YN24e7FxHM8cno2OOkC5AsF6U",
+ authDomain:"webtexsite.firebaseapp.com",
+ databaseURL:"https://webtexsite-default-rtdb.firebaseio.com",
+ projectId:"webtexsite",
+ storageBucket:"webtexsite.firebasestorage.app",
+ messagingSenderId:"999767910404",
+ appId:"1:999767910404:web:1cf1f40328d46c2714ad51",
+ measurementId:"G-HCQ75RZE6Z"
+};
+
+
+const appFB=initializeApp(firebaseConfig);
+
+const auth=getAuth(appFB);
+const db=getDatabase(appFB);
+const storage=getStorage(appFB);
+const functions=getFunctions(appFB);
+
+const ADMIN_UID=
+ "nG2sU5WdWXbkpfEkV1RQ95lAQA92";
+
+
+/* =========================================================
+   CLOUD FUNCTIONS
+========================================================= */
+
+const verifySecurityCode=
+ httpsCallable(
+  functions,
+  "verifySecurityCode"
+ );
+
+const changeSecurityCode=
+ httpsCallable(
+  functions,
+  "changeSecurityCode"
+ );
+
+
+/* =========================================================
+   GLOBAL STATE
+========================================================= */
+
+const $=id=>
+ document.getElementById(id);
+
+let me=null;
+let profile=null;
+
+let selected=null;
+let selectedType=null;
+
+let users=[];
+let groups=[];
+
+let activeTab="users";
+
+let messageOff=null;
+let usersOff=null;
+let groupsOff=null;
+let typingOff=null;
+
+let adminUsersOff=null;
+let adminGroupsOff=null;
+let adminReportsOff=null;
+
+let currentReply=null;
+
+let isAdmin=false;
+
+let typingTimer=null;
+
+let muted=
+ JSON.parse(
+  localStorage.getItem("mutedChats")||"{}"
+ );
+
+let unread=
+ JSON.parse(
+  localStorage.getItem("unreadChats")||"{}"
+ );
+
+
+/* =========================================================
+   HELPERS
+========================================================= */
+
+function escapeHTML(value){
+
+ return String(value??"")
+  .replace(/[&<>"']/g,m=>({
+   "&":"&amp;",
+   "<":"&lt;",
+   ">":"&gt;",
+   '"':"&quot;",
+   "'":"&#039;"
+  }[m]));
+
+}
+
+
+function initials(name){
+
+ return (name||"?")
+  .trim()
+  .charAt(0)
+  .toUpperCase();
+
+}
+
+
+function chatId(a,b){
+
+ return [a,b].sort().join("_");
+
+}
+
+
+function toast(text){
+
+ $("toast").textContent=text;
+
+ $("toast").style.display="block";
+
+ clearTimeout(window.__toastTimer);
+
+ window.__toastTimer=
+  setTimeout(()=>{
+   $("toast").style.display="none";
+  },2200);
+
+}
+
+
+function friendlyAuthError(error){
+
+ const code=error?.code||"";
+
+ const map={
+  "auth/invalid-credential":
+   "Email অথবা password সঠিক নয়।",
+
+  "auth/invalid-login-credentials":
+   "Email অথবা password সঠিক নয়।",
+
+  "auth/wrong-password":
+   "Password সঠিক নয়।",
+
+  "auth/user-not-found":
+   "এই Email-এর কোনো account পাওয়া যায়নি।",
+
+  "auth/invalid-email":
+   "Email address সঠিক নয়।",
+
+  "auth/user-disabled":
+   "এই Admin account disabled।",
+
+  "auth/too-many-requests":
+   "অনেকবার চেষ্টা করা হয়েছে। কিছুক্ষণ পরে আবার চেষ্টা করুন।",
+
+  "auth/network-request-failed":
+   "Internet connection সমস্যা হয়েছে।",
+
+  "auth/operation-not-allowed":
+   "Firebase Email/Password Authentication চালু নেই।",
+
+  "auth/internal-error":
+   "Firebase internal error হয়েছে।",
+
+  "auth/unauthorized-domain":
+   "এই domain Firebase Authentication-এ authorized নয়।",
+
+  "auth/api-key-not-valid":
+   "Firebase API configuration সঠিক নয়।"
+ };
+
+ return map[code]||
+  `Admin login ব্যর্থ হয়েছে (${code||"unknown-error"})`;
+
+}
+
+
+function errorText(error){
+
+ console.error(error);
+
+ return error?.message||
+  error?.code||
+  "Unknown error";
+
+}
+
+
+/* =========================================================
+   THEME
+========================================================= */
+
+function setTheme(theme){
+
+ document.body.classList.toggle(
+  "dark",
+  theme==="dark"
+ );
+
+ localStorage.setItem(
+  "theme",
+  theme
+ );
+
+}
+
+
+setTheme(
+ localStorage.getItem("theme")||
+ "light"
+);
+
+
+$("themeBtn").onclick=()=>{
+
+ setTheme(
+  document.body.classList.contains("dark")
+   ?"light"
+   :"dark"
+ );
+
+};
+
+
+/* =========================================================
+   SECURITY CODE
+========================================================= */
+
+async function unlock(){
+
+ const code=
+  $("securityCode")
+   .value
+   .replace(/\D/g,"");
+
+ $("lockErr").textContent="";
+
+ if(code.length!==6){
+
+  $("lockErr").textContent=
+   "৬ সংখ্যার Security Code দিন।";
+
+  return;
+
+ }
+
+ const button=$("unlock");
+
+ button.disabled=true;
+ button.textContent="যাচাই হচ্ছে...";
+
+ try{
+
+  const result=
+   await verifySecurityCode({
+    code
+   });
+
+  if(result.data?.valid===true){
+
+   $("lock").classList.add("hidden");
+
+   $("usernameEntry")
+    .classList.remove("hidden");
+
+   $("securityCode").value="";
+
+  }else{
+
+   $("lockErr").textContent=
+    "Security Code সঠিক নয়।";
+
+  }
+
+ }catch(error){
+
+  console.error(error);
+
+  $("lockErr").textContent=
+   error?.message||
+   "Security Code verification ব্যর্থ হয়েছে।";
+
+ }finally{
+
+  button.disabled=false;
+  button.textContent="প্রবেশ করুন";
+
+ }
+
+}
+
+
+$("unlock").onclick=unlock;
+
+
+$("securityCode").oninput=()=>{
+
+ $("securityCode").value=
+  $("securityCode")
+   .value
+   .replace(/\D/g,"")
+   .slice(0,6);
+
+};
+
+
+$("securityCode").onkeydown=e=>{
+
+ if(e.key==="Enter")
+  unlock();
+
+};
+
+
+/* =========================================================
+   USER ENTRY
+========================================================= */
+
+async function enterChat(){
+
+ const name=
+  $("username")
+   .value
+   .trim()
+   .replace(/\s+/g," ");
+
+ $("entryErr").textContent="";
+
+ if(name.length<2){
+
+  $("entryErr").textContent=
+   "কমপক্ষে ২ অক্ষরের username দিন।";
+
+  return;
+
+ }
+
+ if(name.length>30){
+
+  $("entryErr").textContent=
+   "Username সর্বোচ্চ ৩০ অক্ষর হতে পারে।";
+
+  return;
+
+ }
+
+ localStorage.setItem(
+  "pendingUsername",
+  name
+ );
+
+ const button=$("enterChat");
+
+ button.disabled=true;
+ button.textContent="প্রবেশ হচ্ছে...";
+
+ try{
+
+  await signInAnonymously(auth);
+
+ }catch(error){
+
+  console.error(error);
+
+  $("entryErr").textContent=
+   error?.message||
+   "Anonymous Authentication চালু নেই।";
+
+  button.disabled=false;
+  button.textContent="চ্যাট শুরু করুন";
+
+ }
+
+}
+
+
+$("enterChat").onclick=enterChat;
+
+
+$("username").onkeydown=e=>{
+
+ if(e.key==="Enter")
+  enterChat();
+
+};
+
+
+const savedUsername=
+ localStorage.getItem("pendingUsername");
+
+if(savedUsername)
+ $("username").value=savedUsername;
+
+
+/* =========================================================
+   AUTH STATE
+========================================================= */
+
+onAuthStateChanged(
+ auth,
+ async user=>{
+
+  if(!user)
+   return;
+
+  if(user.uid===ADMIN_UID){
+
+   isAdmin=true;
+
+   return;
+
+  }
+
+  isAdmin=false;
+  me=user;
+
+  const saved=
+   JSON.parse(
+    localStorage.getItem("chatProfile")||
+    "null"
+   );
+
+  const name=
+   saved?.name||
+   localStorage.getItem("pendingUsername")||
+   "User";
+
+  profile={
+   uid:user.uid,
+   name,
+   photo:saved?.photo||"",
+   online:true,
+   showOnline:saved?.showOnline!==false
+  };
+
+  try{
+
+   await set(
+    ref(db,"users/"+user.uid),
+    {
+     ...profile,
+     lastSeen:Date.now()
+    }
+   );
+
+   await onDisconnect(
+    ref(db,"users/"+user.uid)
+   ).update({
+    online:false,
+    lastSeen:Date.now()
+   });
+
+   await update(
+    ref(db,"users/"+user.uid),
+    {
+     online:true,
+     lastSeen:Date.now()
+    }
+   );
+
+  }catch(error){
+
+   console.error(error);
+
+  }
+
+  $("usernameEntry")
+   .classList.add("hidden");
+
+  $("lock")
+   .classList.add("hidden");
+
+  $("app")
+   .classList.remove("hidden");
+
+  listenUsers();
+  listenGroups();
+
+  renderList();
+
+ }
+);
+
+
+/* =========================================================
+   USERS LISTENER
+========================================================= */
+
+function listenUsers(){
+
+ if(usersOff)
+  usersOff();
+
+ usersOff=
+  onValue(
+   ref(db,"users"),
+   snapshot=>{
+
+    users=[];
+
+    snapshot.forEach(child=>{
+
+     const user=child.val();
+
+     if(
+      user &&
+      user.uid &&
+      user.uid!==me?.uid &&
+      !user.deleted
+     ){
+
+      users.push(user);
+
+     }
+
+    });
+
+    users.sort(
+     (a,b)=>
+      (a.name||"")
+       .localeCompare(
+        b.name||"",
+        "bn"
+       )
+    );
+
+    renderList();
+
+    if(
+     selectedType==="user"&&
+     selected
+    ){
+
+     const updated=
+      users.find(
+       x=>x.uid===selected.uid
+      );
+
+     if(updated){
+
+      selected={
+       ...selected,
+       ...updated
+      };
+
+      updateChatHeader();
+
+     }
+
+    }
+
+   }
+  );
+
+}
+
+
+/* =========================================================
+   GROUPS LISTENER
+========================================================= */
+
+function listenGroups(){
+
+ if(groupsOff)
+  groupsOff();
+
+ groupsOff=
+  onValue(
+   ref(db,"groups"),
+   snapshot=>{
+
+    groups=[];
+
+    snapshot.forEach(child=>{
+
+     const g=child.val();
+
+     if(
+      g &&
+      g.members &&
+      g.members[me?.uid] &&
+      !g.deleted
+     ){
+
+      groups.push({
+       ...g,
+       id:child.key
+      });
+
+     }
+
+    });
+
+    renderList();
+
+   }
+  );
+
+}
+
+
+/* =========================================================
+   AVATAR
+========================================================= */
+
+function avatarHTML(user){
+
+ if(user?.photo){
+
+  return `
+   <img
+    class="avatar"
+    src="${escapeHTML(user.photo)}"
+    alt=""
+   >
+  `;
+
+ }
+
+ return `
+  <div class="avatar">
+   ${escapeHTML(initials(user?.name))}
+  </div>
+ `;
+
+}
+
+
+/* =========================================================
+   LIST RENDER
+========================================================= */
+
+$("search").oninput=
+ renderList;
+
+
+document
+ .querySelectorAll(".tab")
+ .forEach(button=>{
+
+  button.onclick=()=>{
+
+   document
+    .querySelectorAll(".tab")
+    .forEach(x=>
+     x.classList.remove("active")
+    );
+
+   button.classList.add("active");
+
+   activeTab=
+    button.dataset.tab;
+
+   $("search").placeholder=
+    activeTab==="users"
+     ?"Search users..."
+     :"Search groups...";
+
+   renderList();
+
+  };
+
+ });
+
+
+function renderList(){
+
+ const q=
+  $("search")
+   .value
+   .toLowerCase()
+   .trim();
+
+ const arr=
+  activeTab==="users"
+   ?users
+   :groups;
+
+ $("list").innerHTML="";
+
+ const filtered=
+  arr.filter(x=>
+   (x.name||"")
+    .toLowerCase()
+    .includes(q)
+  );
+
+ filtered.forEach(item=>{
+
+  const el=
+   document.createElement("div");
+
+  el.className="item";
+
+  const id=
+   activeTab==="users"
+    ?chatId(me.uid,item.uid)
+    :item.id;
+
+  const unreadCount=
+   Number(unread[id]||0);
+
+  let status="";
+
+  if(activeTab==="users"){
+
+   status=
+    item.online &&
+    item.showOnline!==false
+     ?"● Online"
+     :"Offline";
+
+  }else{
+
+   status=
+    `${Object.keys(item.members||{}).length} members`;
+
+  }
+
+  el.innerHTML=`
+
+   ${avatarHTML(item)}
+
+   <div class="item-main">
+
+    <div class="item-name">
+     ${escapeHTML(item.name)}
+    </div>
+
+    <div class="item-sub">
+     ${escapeHTML(status)}
+    </div>
+
+   </div>
+
+   ${
+    unreadCount>0
+     ?`<div class="unread">
+        ${unreadCount>99?"99+":unreadCount}
+       </div>`
+     :""
+   }
+
+  `;
+
+  el.onclick=()=>{
+
+   openChat(
+    item,
+    activeTab==="users"
+     ?"user"
+     :"group"
+   );
+
+  };
+
+  $("list").appendChild(el);
+
+ });
+
+ if(!filtered.length){
+
+  $("list").innerHTML=
+   '<div class="empty">কিছু পাওয়া যায়নি</div>';
+
+ }
+
+}
+
+
+/* =========================================================
+   CHAT HEADER
+========================================================= */
+
+function updateChatHeader(){
+
+ if(!selected)
+  return;
+
+ $("chatTitle").textContent=
+  selected.name||
+  "Chat";
+
+ if(selectedType==="user"){
+
+  $("chatSub").textContent=
+   selected.online&&
+   selected.showOnline!==false
+    ?"● Online"
+    :"Offline";
+
+ }else{
+
+  $("chatSub").textContent=
+   `${Object.keys(
+    selected.members||{}
+   ).length} members`;
+
+ }
+
+ const old=
+  $("chatAvatar");
+
+ const temp=
+  document.createElement("div");
+
+ temp.innerHTML=
+  avatarHTML(selected);
+
+ const newAvatar=
+  temp.firstElementChild;
+
+ newAvatar.id="chatAvatar";
+
+ old.replaceWith(newAvatar);
+
+}
+
+
+/* =========================================================
+   OPEN CHAT
+========================================================= */
+
+async function openChat(item,type){
+
+ selected=item;
+ selectedType=type;
+ currentReply=null;
+
+ clearReply();
+
+ $("app").classList.add("chat-open");
+
+ updateChatHeader();
+
+ const id=
+  type==="user"
+   ?chatId(me.uid,item.uid)
+   :item.id;
+
+ unread[id]=0;
+
+ localStorage.setItem(
+  "unreadChats",
+  JSON.stringify(unread)
+ );
+
+ renderList();
+
+ listenMessages();
+ listenTyping();
+
+}
+
+
+/* =========================================================
+   BLOCK CHECK
+========================================================= */
+
+async function isBlocked(uid){
+
+ if(!uid||!me)
+  return false;
+
+ try{
+
+  const snap=
+   await get(
+    ref(
+     db,
+     `blocks/${me.uid}/${uid}`
+    )
+   );
+
+  return snap.exists()&&snap.val()===true;
+
+ }catch(error){
+
+  console.error(error);
+  return false;
+
+ }
+
+}
+
+
+async function isBlockedByUser(uid){
+
+ if(!uid||!me)
+  return false;
+
+ try{
+
+  const snap=
+   await get(
+    ref(
+     db,
+     `blocks/${uid}/${me.uid}`
+    )
+   );
+
+  return snap.exists()&&snap.val()===true;
+
+ }catch(error){
+
+  console.error(error);
+  return false;
+
+ }
+
+}
+
+
+/* =========================================================
+   MESSAGE LISTENER
+========================================================= */
+
+function listenMessages(){
+
+ if(messageOff){
+
+  messageOff();
+  messageOff=null;
+
+ }
+
+ const id=
+  selectedType==="user"
+   ?chatId(me.uid,selected.uid)
+   :selected.id;
+
+ messageOff=
+  onValue(
+   ref(db,"messages/"+id),
+   snapshot=>{
+
+    $("messages").innerHTML="";
+
+    if(!snapshot.exists()){
+
+     $("messages").innerHTML=
+      '<div class="empty">এখনও কোনো message নেই।</div>';
+
+     return;
+
+    }
+
+    let count=0;
+
+    snapshot.forEach(child=>{
+
+     count++;
+
+     renderMessage(
+      child.key,
+      child.val()
+     );
+
+    });
+
+    $("messages").scrollTop=
+     $("messages").scrollHeight;
+
+    if(selectedType==="user")
+     markSeen(id);
+
+   }
+  );
+
+}
+
+
+/* =========================================================
+   MESSAGE RENDER
+========================================================= */
+
+function renderMessage(id,message){
+
+ const mine=
+  message.senderId===me.uid;
+
+ const wrap=
+  document.createElement("div");
+
+ wrap.className=
+  "message-wrap "+
+  (mine?"mine":"theirs");
+
+ const bubble=
+  document.createElement("div");
+
+ bubble.className=
+  "bubble "+
+  (mine?"mine":"theirs");
+
+ let content="";
+
+ if(message.replyText){
+
+  content+=`
+   <div class="reply">
+    ${escapeHTML(message.replyText)}
+   </div>
+  `;
+
+ }
+
+ if(message.deleted){
+
+  content+=`
+   <div class="msg-deleted">
+    This message was deleted
+   </div>
+  `;
+
+ }else if(message.type==="image"){
+
+  content+=`
+   <img
+    class="msg-img"
+    src="${escapeHTML(message.url||"")}"
+    alt="image"
+   >
+  `;
+
+ }else{
+
+  content+=
+   escapeHTML(
+    message.text||""
+   );
+
+ }
+
+ const status=
+  mine
+   ?(
+     message.seen
+      ?" ✓✓"
+      :" ✓"
+    )
+   :"";
+
+ content+=`
+
+  <span class="meta">
+
+   ${new Date(
+    message.createdAt||Date.now()
+   ).toLocaleTimeString(
+    [],
+    {
+     hour:"2-digit",
+     minute:"2-digit"
+    }
+   )}
+
+   ${status}
+
+  </span>
+ `;
+
+ bubble.innerHTML=content;
+
+ bubble.oncontextmenu=e=>{
+
+  e.preventDefault();
+
+  messageMenu(
+   id,
+   message,
+   mine
+  );
+
+ };
+
+ wrap.appendChild(bubble);
+
+ $("messages").appendChild(wrap);
+
+}
+
+
+/* =========================================================
+   SEND MESSAGE
+========================================================= */
+
+$("composer").onsubmit=
+ async e=>{
+
+  e.preventDefault();
+
+  const text=
+   $("message")
+    .value
+    .trim();
+
+  if(!selected||!text)
+   return;
+
+  if(selectedType==="user"){
+
+   if(await isBlocked(selected.uid)){
+
+    toast("আপনি এই user-কে block করেছেন।");
+    return;
+
+   }
+
+   if(await isBlockedByUser(selected.uid)){
+
+    toast("এই user আপনাকে block করেছে।");
+    return;
+
+   }
+
+  }
+
+  try{
+
+   await sendMessage({
+    type:"text",
+    text
+   });
+
+   $("message").value="";
+
+   stopTyping();
+
+  }catch(error){
+
+   console.error(error);
+
+   toast(
+    "Message পাঠানো যায়নি: "+
+    (error?.message||"unknown error")
+   );
+
+  }
+
+ };
+
+
+async function sendMessage(message){
+
+ if(!me||!selected)
+  throw new Error("Chat নির্বাচন করুন।");
+
+ const id=
+  selectedType==="user"
+   ?chatId(me.uid,selected.uid)
+   :selected.id;
+
+ const messageRef=
+  push(
+   ref(
+    db,
+    "messages/"+id
+   )
+  );
+
+ const data={
+  id:messageRef.key,
+  ...message,
+  senderId:me.uid,
+  receiverId:
+   selectedType==="user"
+    ?selected.uid
+    :null,
+  groupId:
+   selectedType==="group"
+    ?selected.id
+    :null,
+  createdAt:Date.now(),
+  delivered:false,
+  seen:false,
+  replyText:
+   currentReply?.text||""
+ };
+
+ await set(
+  messageRef,
+  data
+ );
+
+ currentReply=null;
+
+ clearReply();
+
+}
+
+
+/* =========================================================
+   SEEN
+========================================================= */
+
+async function markSeen(id){
+
+ try{
+
+  const snapshot=
+   await get(
+    ref(
+     db,
+     "messages/"+id
+    )
+   );
+
+  if(!snapshot.exists())
+   return;
+
+  const updates={};
+
+  snapshot.forEach(child=>{
+
+   const message=
+    child.val();
+
+   if(
+    message.receiverId===me.uid&&
+    !message.seen
+   ){
+
+    updates[
+     child.key+"/seen"
+    ]=true;
+
+   }
+
+  });
+
+  if(Object.keys(updates).length){
+
+   await update(
+    ref(
+     db,
+     "messages/"+id
+    ),
+    updates
+   );
+
+  }
+
+ }catch(error){
+
+  console.error(error);
+
+ }
+
+}
+
+
+/* =========================================================
+   EMOJI
+========================================================= */
+
+$("emojiBtn").onclick=()=>{
+
+ const emojis=[
+  "😀","😂","😍","🥰","😘",
+  "😎","😭","😡","👍","❤️",
+  "🔥","🎉","🙏","👏","😊"
+ ];
+
+ const emoji=
+  emojis[
+   Math.floor(
+    Math.random()*emojis.length
+   )
+  ];
+
+ $("message").value+=
+  ($("message").value?" ":"")+
+  emoji;
+
+ $("message").focus();
+
+};
+
+
+/* =========================================================
+   IMAGE UPLOAD
+========================================================= */
+
+$("imageBtn").onclick=()=>{
+
+ if(!selected){
+
+  toast("আগে একটি chat নির্বাচন করুন।");
+  return;
+
+ }
+
+ $("imageFile").click();
+
+};
+
+
+$("imageFile").onchange=
+ async()=>{
+
+  const file=
+   $("imageFile").files[0];
+
+  if(!file||!selected)
+   return;
+
+  if(file.size>5*1024*1024){
+
+   toast(
+    "Image 5MB-এর মধ্যে রাখুন।"
+   );
+
+   $("imageFile").value="";
+   return;
+
+  }
+
+  if(!file.type.startsWith("image/")){
+
+   toast("শুধু image file ব্যবহার করুন।");
+   return;
+
+  }
+
+  try{
+
+   const safeName=
+    file.name.replace(
+     /[^\w.-]/g,
+     "_"
+    );
+
+   const path=
+    `chatImages/${me.uid}/${Date.now()}_${safeName}`;
+
+   const fileRef=
+    storageRef(
+     storage,
+     path
+    );
+
+   toast("Image upload হচ্ছে...");
+
+   await uploadBytes(
+    fileRef,
+    file
+   );
+
+   const url=
+    await getDownloadURL(
+     fileRef
+    );
+
+   await sendMessage({
+    type:"image",
+    url
+   });
+
+   toast("Image sent");
+
+  }catch(error){
+
+   console.error(error);
+
+   toast(
+    "Image upload ব্যর্থ: "+
+    (error?.message||"unknown")
+   );
+
+  }
+
+  $("imageFile").value="";
+
+ };
+
+
+/* =========================================================
+   TYPING
+========================================================= */
+
+$("message").addEventListener(
+ "input",
+ ()=>{
+
+  if(!selected||!me)
+   return;
+
+  setTyping(true);
+
+  clearTimeout(typingTimer);
+
+  typingTimer=
+   setTimeout(
+    ()=>stopTyping(),
+    1200
+   );
+
+ }
+);
+
+
+function typingPath(){
+
+ if(!selected)
+  return null;
+
+ const id=
+  selectedType==="user"
+   ?chatId(me.uid,selected.uid)
+   :selected.id;
+
+ return `typing/${id}/${me.uid}`;
+
+}
+
+
+async function setTyping(value){
+
+ const path=
+  typingPath();
+
+ if(!path)
+  return;
+
+ try{
+
+  await set(
+   ref(db,path),
+   value
+  );
+
+ }catch(error){
+
+  console.error(error);
+
+ }
+
+}
+
+
+async function stopTyping(){
+
+ clearTimeout(typingTimer);
+
+ const path=
+  typingPath();
+
+ if(!path)
+  return;
+
+ try{
+
+  await remove(
+   ref(db,path)
+  );
+
+ }catch(error){
+
+  console.error(error);
+
+ }
+
+}
+
+
+function listenTyping(){
+
+ if(typingOff){
+
+  typingOff();
+  typingOff=null;
+
+ }
+
+ if(!selected)
+  return;
+
+ const id=
+  selectedType==="user"
+   ?chatId(me.uid,selected.uid)
+   :selected.id;
+
+ typingOff=
+  onValue(
+   ref(db,"typing/"+id),
+   snapshot=>{
+
+    let someone=false;
+
+    snapshot.forEach(child=>{
+
+     if(
+      child.key!==me.uid&&
+      child.val()===true
+     ){
+
+      someone=true;
+
+     }
+
+    });
+
+    $("typing").textContent=
+     someone
+      ?"typing..."
+      :"";
+
+   }
+  );
+
+}
+
+
+/* =========================================================
+   MESSAGE MENU
+========================================================= */
+
+function messageMenu(
+ id,
+ message,
+ mine
+){
+
+ let html=`
+
+  <button
+   id="replyMessage"
+   class="secondary"
+   style="width:100%;margin-bottom:8px"
+  >
+   ↩ Reply
+  </button>
+
+ `;
+
+ if(mine){
+
+  html+=`
+
+   <button
+    id="deleteMessage"
+    class="danger secondary"
+    style="width:100%;margin-bottom:8px"
+   >
+    🗑 Delete
+   </button>
+
+  `;
+
+ }
+
+ html+=`
+
+  <button
+   id="reportMessage"
+   class="secondary"
+   style="width:100%"
+  >
+   ⚠ Report
+  </button>
+
+ `;
+
+ openModal(
+  "Message",
+  html,
+  false
+ );
+
+
+ $("replyMessage").onclick=()=>{
+
+  currentReply=message;
+
+  $("replyPreview").textContent=
+   message.text||
+   (message.type==="image"
+    ?"Image"
+    :"Message");
+
+  $("replyBar")
+   .classList.add("show");
+
+  closeModal();
+
+  $("message").focus();
+
+ };
+
+
+ const deleteBtn=
+  $("deleteMessage");
+
+ if(deleteBtn){
+
+  deleteBtn.onclick=
+   async()=>{
+
+    try{
+
+     const chat=
+      selectedType==="user"
+       ?chatId(
+        me.uid,
+        selected.uid
+       )
+       :selected.id;
+
+     /*
+      Soft delete:
+      message history structure নষ্ট না করে
+      message deleted হিসেবে রাখা হচ্ছে।
+     */
+
+     await update(
+      ref(
+       db,
+       `messages/${chat}/${id}`
+      ),
+      {
+       deleted:true,
+       text:"",
+       url:""
+      }
+     );
+
+     closeModal();
+
+    }catch(error){
+
+     toast(
+      "Delete ব্যর্থ হয়েছে।"
+     );
+
+    }
+
+   };
+
+ }
+
+
+ $("reportMessage").onclick=
+  async()=>{
+
+   try{
+
+    await push(
+     ref(db,"reports"),
+     {
+      type:"message",
+      messageId:id,
+      reporterId:me.uid,
+      reportedUserId:
+       message.senderId,
+      createdAt:Date.now()
+     }
+    );
+
+    closeModal();
+
+    toast("Message reported");
+
+   }catch(error){
+
+    toast("Report ব্যর্থ হয়েছে।");
+
+   }
+
+  };
+
+}
+
+
+/* =========================================================
+   REPLY
+========================================================= */
+
+function clearReply(){
+
+ currentReply=null;
+
+ $("replyBar")
+  .classList.remove("show");
+
+ $("replyPreview")
+  .textContent="";
+
+}
+
+
+$("replyClose").onclick=
+ clearReply;
+
+
+/* =========================================================
+   PROFILE
+========================================================= */
+
+$("profileBtn").onclick=()=>{
+
+ openModal(
+  "Profile",
+  `
+
+   <input
+    id="profileName"
+    class="field"
+    value="${escapeHTML(profile.name)}"
+    maxlength="30"
+    placeholder="Profile name"
+   >
+
+   <input
+    id="profilePhoto"
+    class="field"
+    value="${escapeHTML(profile.photo||"")}"
+    placeholder="Profile photo URL"
+   >
+
+   <label style="display:block;margin:8px 0">
+    <input
+     id="showOnline"
+     type="checkbox"
+     ${profile.showOnline!==false?"checked":""}
+    >
+    Online status দেখাবেন
+   </label>
+
+  `,
+  true
+ );
+
+
+ $("modalSave").onclick=
+  async()=>{
+
+   const name=
+    $("profileName")
+     .value
+     .trim()
+     .replace(/\s+/g," ");
+
+   if(name.length<2){
+
+    toast(
+     "Profile name কমপক্ষে ২ অক্ষর হতে হবে।"
+    );
+
+    return;
+
+   }
+
+   const data={
+
+    name,
+
+    photo:
+     $("profilePhoto")
+      .value
+      .trim(),
+
+    showOnline:
+     $("showOnline").checked
+
+   };
+
+   profile={
+    ...profile,
+    ...data
+   };
+
+   localStorage.setItem(
+    "chatProfile",
+    JSON.stringify(profile)
+   );
+
+   localStorage.setItem(
+    "pendingUsername",
+    data.name
+   );
+
+   try{
+
+    await update(
+     ref(
+      db,
+      "users/"+me.uid
+     ),
+     data
+    );
+
+    closeModal();
+
+    toast(
+     "Profile updated"
+    );
+
+   }catch(error){
+
+    toast(
+     "Profile update ব্যর্থ হয়েছে।"
+    );
+
+   }
+
+  };
+
+};
+
+
+/* =========================================================
+   USER PRIVACY / BLOCK / REPORT
+========================================================= */
+
+$("moreBtn").onclick=
+ async()=>{
+
+  if(!selected)
+   return;
+
+  if(selectedType==="group"){
+
+   groupMenu();
+   return;
+
+  }
+
+  const blocked=
+   await isBlocked(
+    selected.uid
+   );
+
+  openModal(
+   "Privacy",
+   `
+
+    <button
+     id="blockUser"
+     class="${
+      blocked
+       ?"success-btn"
+       :"secondary"
+     }"
+     style="width:100%;margin-bottom:8px"
+    >
+     ${
+      blocked
+       ?"Unblock user"
+       :"Block user"
+     }
+    </button>
+
+    <button
+     id="reportUser"
+     class="danger secondary"
+     style="width:100%"
+    >
+     ⚠ Report user
+    </button>
+
+   `,
+   false
+  );
+
+
+  $("blockUser").onclick=
+   async()=>{
+
+    try{
+
+     if(blocked){
+
+      await remove(
+       ref(
+        db,
+        `blocks/${me.uid}/${selected.uid}`
+       )
+      );
+
+      toast("User unblocked");
+
+     }else{
+
+      await set(
+       ref(
+        db,
+        `blocks/${me.uid}/${selected.uid}`
+       ),
+       true
+      );
+
+      toast("User blocked");
+
+     }
+
+     closeModal();
+
+    }catch(error){
+
+     toast(
+      "Block operation ব্যর্থ হয়েছে।"
+     );
+
+    }
+
+   };
+
+
+  $("reportUser").onclick=
+   async()=>{
+
+    try{
+
+     await push(
+      ref(db,"reports"),
+      {
+       type:"user",
+       reporterId:me.uid,
+       reportedUserId:selected.uid,
+       createdAt:Date.now()
+      }
+     );
+
+     closeModal();
+
+     toast("User reported");
+
+    }catch(error){
+
+     toast("Report ব্যর্থ হয়েছে।");
+
+    }
+
+   };
+
+ };
+
+
+/* =========================================================
+   GROUP CREATE
+========================================================= */
+
+$("createGroupBtn").onclick=
+ ()=>{
+
+  if(!users.length){
+
+   toast(
+    "Group তৈরি করার জন্য অন্য user প্রয়োজন।"
+   );
+
+   return;
+
+  }
+
+  const userHTML=
+   users.map(user=>`
+
+    <label
+     class="member-row"
+    >
+
+     <input
+      type="checkbox"
+      value="${escapeHTML(user.uid)}"
+     >
+
+     ${avatarHTML(user)}
+
+     <div class="member-info">
+
+      <b>
+       ${escapeHTML(user.name)}
+      </b>
+
+      <div class="small">
+       ${
+        user.online
+         ?"Online"
+         :"Offline"
+       }
+      </div>
+
+     </div>
+
+    </label>
+
+   `).join("");
+
+  openModal(
+   "Create Group",
+   `
+
+    <input
+     id="groupName"
+     class="field"
+     maxlength="50"
+     placeholder="Group name"
+    >
+
+    <input
+     id="groupPhoto"
+     class="field"
+     placeholder="Group photo URL (optional)"
+    >
+
+    <div class="small">
+     Members নির্বাচন করুন:
+    </div>
+
+    <div class="member-list">
+     ${userHTML}
+    </div>
+
+   `,
+   true
+  );
+
+
+  $("modalSave").onclick=
+   async()=>{
+
+    const name=
+     $("groupName")
+      .value
+      .trim();
+
+    if(name.length<2){
+
+     toast(
+      "Group name কমপক্ষে ২ অক্ষর হতে হবে।"
+     );
+
+     return;
+
+    }
+
+    const members={
+     [me.uid]:true
+    };
+
+    document
+     .querySelectorAll(
+      '#modalBody input[type="checkbox"]'
+     )
+     .forEach(box=>{
+
+      if(box.checked)
+       members[box.value]=true;
+
+     });
+
+    try{
+
+     const groupRef=
+      push(
+       ref(db,"groups")
+      );
+
+     await set(
+      groupRef,
+      {
+       id:groupRef.key,
+       name,
+       photo:
+        $("groupPhoto")
+         .value
+         .trim(),
+       ownerId:me.uid,
+       adminId:me.uid,
+       members,
+       createdAt:Date.now()
+      }
+     );
+
+     closeModal();
+
+     toast(
+      "Group তৈরি হয়েছে"
+     );
+
+     activeTab="groups";
+
+     document
+      .querySelectorAll(".tab")
+      .forEach(x=>
+       x.classList.toggle(
+        "active",
+        x.dataset.tab==="groups"
+       )
+      );
+
+     renderList();
+
+    }catch(error){
+
+     console.error(error);
+
+     toast(
+      "Group তৈরি ব্যর্থ: "+
+      (error?.message||"unknown")
+     );
+
+    }
+
+   };
+
+ };
+
+
+/* =========================================================
+   GROUP MENU
+========================================================= */
+
+function groupMenu(){
+
+ if(!selected)
+  return;
+
+ const isAdmin=
+  selected.adminId===me.uid||
+  selected.ownerId===me.uid;
+
+ let html=`
+
+  <button
+   id="groupInfo"
+   class="secondary"
+   style="width:100%;margin-bottom:8px"
+  >
+   Group Info
+  </button>
+
+ `;
+
+ if(isAdmin){
+
+  html+=`
+
+   <button
+    id="groupManage"
+    class="secondary"
+    style="width:100%;margin-bottom:8px"
+   >
+    Manage Members
+   </button>
+
+   <button
+    id="groupEdit"
+    class="secondary"
+    style="width:100%;margin-bottom:8px"
+   >
+    Edit Group
+   </button>
+
+  `;
+
+ }
+
+ html+=`
+
+  <button
+   id="groupLeave"
+   class="danger secondary"
+   style="width:100%"
+  >
+   Leave Group
+  </button>
+
+ `;
+
+ openModal(
+  "Group",
+  html,
+  false
+ );
+
+
+ $("groupInfo").onclick=
+  ()=>{
+
+   const memberCount=
+    Object.keys(
+     selected.members||{}
+    ).length;
+
+   openModal(
+    "Group Info",
+    `
+
+     <div style="text-align:center">
+
+      ${avatarHTML(selected)}
+
+      <h3>
+       ${escapeHTML(selected.name)}
+      </h3>
+
+      <div class="small">
+       ${memberCount} members
+      </div>
+
+     </div>
+
+    `,
+    false
+   );
+
+  };
+
+
+ const manage=
+  $("groupManage");
+
+ if(manage){
+
+  manage.onclick=
+   ()=>manageGroupMembers();
+
+ }
+
+
+ const edit=
+  $("groupEdit");
+
+ if(edit){
+
+  edit.onclick=
+   ()=>editGroup();
+
+ }
+
+
+ $("groupLeave").onclick=
+  async()=>{
+
+   try{
+
+    await remove(
+     ref(
+      db,
+      `groups/${selected.id}/members/${me.uid}`
+     )
+    );
+
+    closeModal();
+
+    selected=null;
+
+    $("app")
+     .classList.remove("chat-open");
+
+    toast(
+     "Group থেকে বের হয়ে গেছেন।"
+    );
+
+   }catch(error){
+
+    toast(
+     "Group leave ব্যর্থ হয়েছে।"
+    );
+
+   }
+
+  };
+
+}
+
+
+/* =========================================================
+   GROUP MEMBER MANAGEMENT
+========================================================= */
+
+function manageGroupMembers(){
+
+ const members=
+  selected.members||{};
+
+ let html="";
+
+ Object.keys(members)
+  .forEach(uid=>{
+
+   const user=
+    users.find(
+     x=>x.uid===uid
+    );
+
+   const name=
+    user?.name||
+    uid;
+
+   const isOwner=
+    uid===selected.ownerId;
+
+   html+=`
+
+    <div class="member-row">
+
+     ${avatarHTML(
+      user||{name}
+     )}
+
+     <div class="member-info">
+      <b>
+       ${escapeHTML(name)}
+      </b>
+
+      ${
+       isOwner
+        ?'<div class="small">Owner</div>'
+        :""
+      }
+     </div>
+
+     ${
+      !isOwner
+       ?`
+        <button
+         class="danger secondary"
+         data-remove-member="${escapeHTML(uid)}"
+        >
+         Remove
+        </button>
+       `
+       :""
+     }
+
+    </div>
+
+   `;
+
+  });
+
+ const available=
+  users.filter(
+   x=>!members[x.uid]
+  );
+
+ html+=`
+
+  <hr>
+
+  <div class="small">
+   Add members
+  </div>
+
+ `;
+
+ available.forEach(user=>{
+
+  html+=`
+
+   <label class="member-row">
+
+    <input
+     type="checkbox"
+     value="${escapeHTML(user.uid)}"
+     data-add-member
+    >
+
+    ${avatarHTML(user)}
+
+    <div class="member-info">
+     ${escapeHTML(user.name)}
+    </div>
+
+   </label>
+
+  `;
+
+ });
+
+ openModal(
+  "Manage Members",
+  `<div class="member-list">${html}</div>`,
+  true
+ );
+
+
+ document
+  .querySelectorAll(
+   "[data-remove-member]"
+  )
+  .forEach(button=>{
+
+   button.onclick=
+    async()=>{
+
+     const uid=
+      button.dataset.removeMember;
+
+     try{
+
+      await remove(
+       ref(
+        db,
+        `groups/${selected.id}/members/${uid}`
+       )
+      );
+
+      toast("Member removed");
+
+      closeModal();
+
+     }catch(error){
+
+      toast(
+       "Member remove ব্যর্থ হয়েছে।"
+      );
+
+     }
+
+    };
+
+  });
+
+
+ $("modalSave").onclick=
+  async()=>{
+
+   const updates={};
+
+   document
+    .querySelectorAll(
+     "[data-add-member]:checked"
+    )
+    .forEach(box=>{
+
+     updates[
+      `groups/${selected.id}/members/${box.value}`
+     ]=true;
+
+    });
+
+   try{
+
+    if(Object.keys(updates).length){
+
+     await update(
+      ref(db),
+      updates
+     );
+
+    }
+
+    closeModal();
+
+    toast(
+     "Members updated"
+    );
+
+   }catch(error){
+
+    toast(
+     "Members update ব্যর্থ হয়েছে।"
+    );
+
+   }
+
+  };
+
+}
+
+
+/* =========================================================
+   GROUP EDIT
+========================================================= */
+
+function editGroup(){
+
+ openModal(
+  "Edit Group",
+  `
+
+   <input
+    id="editGroupName"
+    class="field"
+    maxlength="50"
+    value="${escapeHTML(selected.name||"")}"
+    placeholder="Group name"
+   >
+
+   <input
+    id="editGroupPhoto"
+    class="field"
+    value="${escapeHTML(selected.photo||"")}"
+    placeholder="Group photo URL"
+   >
+
+  `,
+  true
+ );
+
+
+ $("modalSave").onclick=
+  async()=>{
+
+   const name=
+    $("editGroupName")
+     .value
+     .trim();
+
+   if(name.length<2){
+
+    toast(
+     "Group name সঠিক নয়।"
+    );
+
+    return;
+
+   }
+
+   try{
+
+    await update(
+     ref(
+      db,
+      "groups/"+selected.id
+     ),
+     {
+      name,
+      photo:
+       $("editGroupPhoto")
+        .value
+        .trim()
+     }
+    );
+
+    selected={
+     ...selected,
+     name,
+     photo:
+      $("editGroupPhoto")
+       .value
+       .trim()
+    };
+
+    updateChatHeader();
+
+    closeModal();
+
+    toast(
+     "Group updated"
+    );
+
+   }catch(error){
+
+    toast(
+     "Group update ব্যর্থ হয়েছে।"
+    );
+
+   }
+
+  };
+
+}
+
+
+/* =========================================================
+   MUTE
+========================================================= */
+
+$("muteBtn").onclick=
+ ()=>{
+
+  if(!selected)
+   return;
+
+  const id=
+   selectedType==="user"
+    ?chatId(
+     me.uid,
+     selected.uid
+    )
+    :selected.id;
+
+  muted[id]=
+   !muted[id];
+
+  localStorage.setItem(
+   "mutedChats",
+   JSON.stringify(muted)
+  );
+
+  $("muteBtn").textContent=
+   muted[id]
+    ?"🔕"
+    :"🔔";
+
+  toast(
+   muted[id]
+    ?"Notification muted"
+    :"Notification unmuted"
+  );
+
+ };
+
+
+/* =========================================================
+   MODAL
+========================================================= */
+
+function openModal(
+ title,
+ body,
+ saveVisible=true
+){
+
+ $("modalTitle")
+  .textContent=title;
+
+ $("modalBody")
+  .innerHTML=body;
+
+ $("modal")
+  .classList.remove("hidden");
+
+ $("modalSave").style.display=
+  saveVisible
+   ?"block"
+   :"none";
+
+}
+
+
+function closeModal(){
+
+ $("modal")
+  .classList.add("hidden");
+
+ $("modalSave").onclick=null;
+
+}
+
+
+$("modalCancel").onclick=
+ closeModal;
+
+
+$("modal").addEventListener(
+ "click",
+ e=>{
+
+  if(e.target===$("modal"))
+   closeModal();
+
+ }
+);
+
+
+/* =========================================================
+   BACK
+========================================================= */
+
+$("back").onclick=
+ ()=>{
+
+  $("app")
+   .classList.remove("chat-open");
+
+  stopTyping();
+
+  selected=null;
+  selectedType=null;
+
+  clearReply();
+
+  if(messageOff){
+
+   messageOff();
+   messageOff=null;
+
+  }
+
+  if(typingOff){
+
+   typingOff();
+   typingOff=null;
+
+  }
+
+ };
+
+
+/* =========================================================
+   ADMIN LOGIN
+========================================================= */
+
+$("adminLoginOpen").onclick=
+ ()=>{
+
+  openModal(
+   "Admin Login",
+   `
+
+    <input
+     id="adminEmail"
+     class="field"
+     type="email"
+     autocomplete="username"
+     placeholder="Admin email"
+    >
+
+    <input
+     id="adminPassword"
+     class="field"
+     type="password"
+     autocomplete="current-password"
+     placeholder="Admin password"
+    >
+
+    <div
+     id="adminLoginError"
+     class="err"
+    ></div>
+
+   `,
+   true
+  );
+
+
+  $("modalSave").textContent=
+   "Login";
+
+
+  $("modalSave").onclick=
+   async()=>{
+
+    const email=
+     $("adminEmail")
+      .value
+      .trim();
+
+    const password=
+     $("adminPassword")
+      .value;
+
+    const errorBox=
+     $("adminLoginError");
+
+    errorBox.textContent="";
+
+    if(!email||!password){
+
+     errorBox.textContent=
+      "Email এবং password দুটোই দিন।";
+
+     return;
+
+    }
+
+    const button=
+     $("modalSave");
+
+    button.disabled=true;
+    button.textContent=
+     "Login হচ্ছে...";
+
+    try{
+
+     /*
+      Firebase Email/Password Login
+     */
+
+     const result=
+      await signInWithEmailAndPassword(
+       auth,
+       email,
+       password
+      );
+
+     /*
+      UID must match Admin UID
+     */
+
+     if(result.user.uid!==ADMIN_UID){
+
+      await signOut(auth);
+
+      errorBox.textContent=
+       "Login সফল হলেও এই account-এর Admin permission নেই.";
+
+      return;
+
+     }
+
+     isAdmin=true;
+
+     closeModal();
+
+     $("lock")
+      .classList.add("hidden");
+
+     $("usernameEntry")
+      .classList.add("hidden");
+
+     $("app")
+      .classList.add("hidden");
+
+     $("adminPanel")
+      .classList.remove("hidden");
+
+     loadAdmin();
+
+    }catch(error){
+
+     console.error(
+      "ADMIN LOGIN ERROR:",
+      error
+     );
+
+     errorBox.textContent=
+      friendlyAuthError(error);
+
+    }finally{
+
+     button.disabled=false;
+     button.textContent="Login";
+
+    }
+
+   };
+
+ };
+
+
+/* =========================================================
+   ADMIN LISTENERS
+========================================================= */
+
+let adminUsersData=[];
+
+
+function loadAdmin(){
+
+ loadAdminUsers();
+ loadAdminGroups();
+ loadAdminReports();
+
+}
+
+
+/* =========================================================
+   ADMIN USERS
+========================================================= */
+
+function loadAdminUsers(){
+
+ if(adminUsersOff)
+  adminUsersOff();
+
+ adminUsersOff=
+  onValue(
+   ref(db,"users"),
+   snapshot=>{
+
+    adminUsersData=[];
+
+    snapshot.forEach(child=>{
+
+     const user=child.val();
+
+     if(user)
+      adminUsersData.push(user);
+
+    });
+
+    renderAdminUsers();
+
+   }
+  );
+
+}
+
+
+$("adminUserSearch").oninput=
+ renderAdminUsers;
+
+
+function renderAdminUsers(){
+
+ const q=
+  $("adminUserSearch")
+   .value
+   .toLowerCase()
+   .trim();
+
+ const list=
+  adminUsersData.filter(user=>
+   (user.name||"")
+    .toLowerCase()
+    .includes(q)||
+   (user.uid||"")
+    .toLowerCase()
+    .includes(q)
+  );
+
+ $("adminUsers").innerHTML="";
+
+ list.forEach(user=>{
+
+  const row=
+   document.createElement("div");
+
+  row.className="admin-row";
+
+  const online=
+   user.online===true;
+
+  row.innerHTML=`
+
+   <div style="min-width:0">
+
+    <b>
+     ${escapeHTML(
+      user.name||"User"
+     )}
+    </b>
+
+    <div class="small">
+     ${escapeHTML(
+      user.uid||""
+     )}
+    </div>
+
+    <span class="
+     status-badge
+     ${
+      online
+       ?"status-online"
+       :"status-offline"
+     }
+    ">
+     ${
+      online
+       ?"ONLINE"
+       :"OFFLINE"
+     }
+    </span>
+
+   </div>
+
+   <div class="admin-actions">
+
+    <button
+     class="secondary"
+     data-admin-block
+    >
+     Block
+    </button>
+
+    <button
+     class="danger secondary"
+     data-admin-delete
+    >
+     Delete
+    </button>
+
+   </div>
+
+  `;
+
+
+  row.querySelector(
+   "[data-admin-block]"
+  ).onclick=
+   async()=>{
+
+    try{
+
+     await set(
+      ref(
+       db,
+       `adminBlocks/${user.uid}`
+      ),
+      true
+     );
+
+     toast(
+      "User blocked by Admin"
+     );
+
+    }catch(error){
+
+     toast(
+      "Block failed"
+     );
+
+    }
+
+   };
+
+
+  row.querySelector(
+   "[data-admin-delete]"
+  ).onclick=
+   async()=>{
+
+    if(
+     !confirm(
+      "এই user's profile delete/disable করবেন?"
+     )
+    )
+     return;
+
+    try{
+
+     /*
+      Client-side থেকে Firebase Auth user
+      permanently delete করা যায় না।
+      তাই profile soft-delete করা হচ্ছে।
+     */
+
+     await update(
+      ref(
+       db,
+       `users/${user.uid}`
+      ),
+      {
+       deleted:true,
+       online:false,
+       deletedAt:Date.now()
+      }
+     );
+
+     toast(
+      "User profile disabled"
+     );
+
+    }catch(error){
+
+     toast(
+      "Delete failed"
+     );
+
+    }
+
+   };
+
+
+  $("adminUsers")
+   .appendChild(row);
+
+ });
+
+
+ if(!list.length){
+
+  $("adminUsers").innerHTML=
+   '<div class="small">No users found.</div>';
+
+ }
+
+}
+
+
+/* =========================================================
+   ADMIN GROUPS
+========================================================= */
+
+function loadAdminGroups(){
+
+ if(adminGroupsOff)
+  adminGroupsOff();
+
+ adminGroupsOff=
+  onValue(
+   ref(db,"groups"),
+   snapshot=>{
+
+    $("adminGroups").innerHTML="";
+
+    snapshot.forEach(child=>{
+
+     const group=
+      child.val();
+
+     const row=
+      document.createElement("div");
+
+     row.className=
+      "admin-row";
+
+     const count=
+      Object.keys(
+       group.members||{}
+      ).length;
+
+     row.innerHTML=`
+
+      <div>
+
+       <b>
+        ${escapeHTML(
+         group.name||"Group"
+        )}
+       </b>
+
+       <div class="small">
+        ${count} members
+       </div>
+
+       <div class="small">
+        Owner:
+        ${escapeHTML(
+         group.ownerId||""
+        )}
+       </div>
+
+      </div>
+
+      <button
+       class="danger secondary"
+      >
+       Delete
+      </button>
+
+     `;
+
+     row.querySelector("button")
+      .onclick=
+      async()=>{
+
+       if(
+        !confirm(
+         "এই group permanently remove করবেন?"
+        )
+       )
+        return;
+
+       try{
+
+        await update(
+         ref(
+          db,
+          `groups/${child.key}`
+         ),
+         {
+          deleted:true,
+          deletedAt:Date.now()
+         }
+        );
+
+        toast(
+         "Group disabled"
+        );
+
+       }catch(error){
+
+        toast(
+         "Group delete failed"
+        );
+
+       }
+
+      };
+
+     $("adminGroups")
+      .appendChild(row);
+
+    });
+
+
+    if(
+     !$("adminGroups")
+      .children.length
+    ){
+
+     $("adminGroups").innerHTML=
+      '<div class="small">No groups.</div>';
+
+    }
+
+   }
+  );
+
+}
+
+
+/* =========================================================
+   ADMIN REPORTS
+========================================================= */
+
+function loadAdminReports(){
+
+ if(adminReportsOff)
+  adminReportsOff();
+
+ adminReportsOff=
+  onValue(
+   ref(db,"reports"),
+   snapshot=>{
+
+    $("adminReports").innerHTML="";
+
+    snapshot.forEach(child=>{
+
+     const report=
+      child.val();
+
+     const row=
+      document.createElement("div");
+
+     row.className="admin-row";
+
+     row.innerHTML=`
+
+      <div style="min-width:0">
+
+       <b>
+        ${escapeHTML(
+         report.type||"Report"
+        )}
+       </b>
+
+       <div class="small">
+        Reporter:
+        ${escapeHTML(
+         report.reporterId||""
+        )}
+       </div>
+
+       <div class="small">
+        Reported:
+        ${escapeHTML(
+         report.reportedUserId||""
+        )}
+       </div>
+
+       <div class="small">
+        ${
+         report.createdAt
+          ?new Date(
+           report.createdAt
+          ).toLocaleString()
+          :""
+        }
+       </div>
+
+      </div>
+
+      <button
+       class="danger secondary"
+      >
+       Resolve
+      </button>
+
+     `;
+
+     row.querySelector("button")
+      .onclick=
+      async()=>{
+
+       try{
+
+        await remove(
+         ref(
+          db,
+          "reports/"+child.key
+         )
+        );
+
+        toast(
+         "Report resolved"
+        );
+
+       }catch(error){
+
+        toast(
+         "Report resolve failed"
+        );
+
+       }
+
+      };
+
+     $("adminReports")
+      .appendChild(row);
+
+    });
+
+
+    if(
+     !$("adminReports")
+      .children.length
+    ){
+
+     $("adminReports").innerHTML=
+      '<div class="small">No reports.</div>';
+
+    }
+
+   }
+  );
+
+}
+
+
+/* =========================================================
+   CHANGE SECURITY CODE
+========================================================= */
+
+$("newSecurityCode").oninput=
+ ()=>{
+
+  $("newSecurityCode").value=
+   $("newSecurityCode")
+    .value
+    .replace(/\D/g,"")
+    .slice(0,6);
+
+ };
+
+
+$("changeSecurityCode").onclick=
+ async()=>{
+
+  const code=
+   $("newSecurityCode")
+    .value
+    .replace(/\D/g,"");
+
+  const msg=
+   $("codeChangeMsg");
+
+  msg.textContent="";
+
+  if(code.length!==6){
+
+   msg.textContent=
+    "ঠিক ৬ সংখ্যার code দিন.";
+
+   msg.style.color=
+    "#dc2626";
+
+   return;
+
+  }
+
+  const button=
+   $("changeSecurityCode");
+
+  button.disabled=true;
+  button.textContent=
+   "পরিবর্তন হচ্ছে...";
+
+  try{
+
+   const result=
+    await changeSecurityCode({
+     code
+    });
+
+   if(result.data?.success){
+
+    $("newSecurityCode").value="";
+
+    msg.textContent=
+     "Security Code সফলভাবে পরিবর্তন হয়েছে.";
+
+    msg.style.color=
+     "#16a34a";
+
+   }else{
+
+    msg.textContent=
+     result.data?.message||
+     "Security Code পরিবর্তন করা যায়নি.";
+
+    msg.style.color=
+     "#dc2626";
+
+   }
+
+  }catch(error){
+
+   console.error(error);
+
+   msg.textContent=
+    error?.message||
+    "Security Code পরিবর্তন ব্যর্থ হয়েছে.";
+
+   msg.style.color=
+    "#dc2626";
+
+  }finally{
+
+   button.disabled=false;
+   button.textContent=
+    "Security Code পরিবর্তন";
+
+  }
+
+ };
+
+
+/* =========================================================
+   ADMIN LOGOUT
+========================================================= */
+
+$("adminLogout").onclick=
+ async()=>{
+
+  try{
+
+   await signOut(auth);
+
+  }catch(error){
+
+   console.error(error);
+
+  }
+
+  isAdmin=false;
+
+  if(adminUsersOff){
+
+   adminUsersOff();
+   adminUsersOff=null;
+
+  }
+
+  if(adminGroupsOff){
+
+   adminGroupsOff();
+   adminGroupsOff=null;
+
+  }
+
+  if(adminReportsOff){
+
+   adminReportsOff();
+   adminReportsOff=null;
+
+  }
+
+  $("adminPanel")
+   .classList.add("hidden");
+
+  $("app")
+   .classList.add("hidden");
+
+  $("usernameEntry")
+   .classList.add("hidden");
+
+  $("lock")
+   .classList.remove("hidden");
+
+  $("securityCode").value="";
+
+  $("adminEmail")?.value="";
+
+  $("adminPassword")?.value="";
+
+ };
+
+
+/* =========================================================
+   OFFLINE / ONLINE STATUS
+========================================================= */
+
+window.addEventListener(
+ "online",
+ async()=>{
+
+  if(me){
+
+   try{
+
+    await update(
+     ref(
+      db,
+      "users/"+me.uid
+     ),
+     {
+      online:true,
+      lastSeen:Date.now()
+     }
+    );
+
+   }catch(error){}
+
+  }
+
+ });
+
+
+window.addEventListener(
+ "offline",
+ async()=>{
+
+  if(me){
+
+   try{
+
+    await update(
+     ref(
+      db,
+      "users/"+me.uid
+     ),
+     {
+      online:false,
+      lastSeen:Date.now()
+     }
+    );
+
+   }catch(error){}
+
+  }
+
+ });
+
+
+window.addEventListener(
+ "beforeunload",
+ ()=>{
+
+  if(me){
+
+   update(
+    ref(
+     db,
+     "users/"+me.uid
+    ),
+    {
+     online:false,
+     lastSeen:Date.now()
+    }
+   );
+
+  }
+
+ });
+
+
+/* =========================================================
+   INITIAL MUTE ICON
+========================================================= */
+
+function refreshMuteIcon(){
+
+ if(!selected)
+  return;
+
+ const id=
+  selectedType==="user"
+   ?chatId(
+    me.uid,
+    selected.uid
+   )
+   :selected.id;
+
+ $("muteBtn").textContent=
+  muted[id]
+   ?"🔕"
+   :"🔔";
+
+}
+
+
+/* =========================================================
+   PERIODIC CHAT HEADER REFRESH
+========================================================= */
+
+setInterval(
+ ()=>{
+
+  if(selected){
+
+   refreshMuteIcon();
+   updateChatHeader();
+
+  }
+
+ },
+ 3000
+);
+
+
+/* =========================================================
+   STARTUP
+========================================================= */
+
+$("securityCode").focus();
+
+</script>
+
+</body>
+</html>
