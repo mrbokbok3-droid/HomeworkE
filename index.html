@@ -1,0 +1,2458 @@
+<script type="module">
+import {
+ initializeApp
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+
+import {
+ getAuth,
+ signInAnonymously,
+ signInWithEmailAndPassword,
+ signOut,
+ onAuthStateChanged
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+import {
+ getDatabase,
+ ref,
+ set,
+ push,
+ onValue,
+ update,
+ remove,
+ get,
+ onDisconnect
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+import {
+ getStorage,
+ ref as storageRef,
+ uploadBytes,
+ getDownloadURL
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
+
+import {
+ getFunctions,
+ httpsCallable
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-functions.js";
+
+const firebaseConfig={
+ apiKey:"AIzaSyCd1UvxH8YN24e7FxHM8cno2OOkC5AsF6U",
+ authDomain:"webtexsite.firebaseapp.com",
+ databaseURL:"https://webtexsite-default-rtdb.firebaseio.com",
+ projectId:"webtexsite",
+ storageBucket:"webtexsite.firebasestorage.app",
+ messagingSenderId:"999767910404",
+ appId:"1:999767910404:web:1cf1f40328d46c2714ad51",
+ measurementId:"G-HCQ75RZE6Z"
+};
+
+const appFB=initializeApp(firebaseConfig);
+const auth=getAuth(appFB);
+const db=getDatabase(appFB);
+const storage=getStorage(appFB);
+const functions=getFunctions(appFB);
+
+const ADMIN_UID="nG2sU5WdWXbkpfEkV1RQ95lAQA92";
+
+const verifySecurityCode=httpsCallable(
+ functions,
+ "verifySecurityCode"
+);
+
+const changeSecurityCode=httpsCallable(
+ functions,
+ "changeSecurityCode"
+);
+
+const $=id=>document.getElementById(id);
+
+let me=null;
+let profile=null;
+let selected=null;
+let selectedType=null;
+let users=[];
+let groups=[];
+let activeTab="users";
+let messageOff=null;
+let usersOff=null;
+let groupsOff=null;
+let typingOff=null;
+let adminUsersOff=null;
+let adminGroupsOff=null;
+let adminReportsOff=null;
+let currentReply=null;
+let isAdmin=false;
+let typingTimer=null;
+
+let muted=JSON.parse(
+ localStorage.getItem("mutedChats")||"{}"
+);
+
+let unread=JSON.parse(
+ localStorage.getItem("unreadChats")||"{}"
+);
+
+function escapeHTML(value){
+ return String(value??"")
+  .replace(/[&<>"']/g,m=>({
+   "&":"&amp;",
+   "<":"&lt;",
+   ">":"&gt;",
+   '"':"&quot;",
+   "'":"&#039;"
+  }[m]));
+}
+
+function initials(name){
+ return (name||"?")
+  .trim()
+  .charAt(0)
+  .toUpperCase();
+}
+
+function chatId(a,b){
+ return [a,b].sort().join("_");
+}
+
+function toast(text){
+ const t=$("toast");
+ if(!t)return;
+ t.textContent=text;
+ t.style.display="block";
+ clearTimeout(window.__toastTimer);
+ window.__toastTimer=setTimeout(()=>{
+  t.style.display="none";
+ },2200);
+}
+
+function friendlyAuthError(error){
+ const code=error?.code||"";
+ const map={
+  "auth/invalid-credential":"Email অথবা password সঠিক নয়।",
+  "auth/invalid-login-credentials":"Email অথবা password সঠিক নয়।",
+  "auth/wrong-password":"Password সঠিক নয়।",
+  "auth/user-not-found":"এই Email-এর কোনো account পাওয়া যায়নি।",
+  "auth/invalid-email":"Email address সঠিক নয়।",
+  "auth/user-disabled":"এই Admin account disabled।",
+  "auth/too-many-requests":"অনেকবার চেষ্টা করা হয়েছে। কিছুক্ষণ পরে আবার চেষ্টা করুন।",
+  "auth/network-request-failed":"Internet connection সমস্যা হয়েছে।",
+  "auth/operation-not-allowed":"Firebase Email/Password Authentication চালু নেই।",
+  "auth/internal-error":"Firebase internal error হয়েছে।",
+  "auth/unauthorized-domain":"এই domain Firebase Authentication-এ authorized নয়।",
+  "auth/api-key-not-valid":"Firebase API configuration সঠিক নয়।"
+ };
+ return map[code]||`Admin login ব্যর্থ হয়েছে (${code||"unknown-error"})`;
+}
+
+function setTheme(theme){
+ document.body.classList.toggle(
+  "dark",
+  theme==="dark"
+ );
+ localStorage.setItem("theme",theme);
+}
+
+setTheme(
+ localStorage.getItem("theme")||"light"
+);
+
+$("themeBtn")?.addEventListener("click",()=>{
+ setTheme(
+  document.body.classList.contains("dark")
+   ?"light"
+   :"dark"
+ );
+});
+
+async function unlock(){
+ const code=$("securityCode")
+  .value
+  .replace(/\D/g,"");
+
+ $("lockErr").textContent="";
+
+ if(code.length!==6){
+  $("lockErr").textContent=
+   "৬ সংখ্যার Security Code দিন।";
+  return;
+ }
+
+ const button=$("unlock");
+ button.disabled=true;
+ button.textContent="যাচাই হচ্ছে...";
+
+ try{
+  const result=await verifySecurityCode({code});
+
+  if(result.data?.valid===true){
+   $("lock").classList.add("hidden");
+   $("usernameEntry").classList.remove("hidden");
+   $("securityCode").value="";
+  }else{
+   $("lockErr").textContent=
+    "Security Code সঠিক নয়।";
+  }
+ }catch(error){
+  console.error(error);
+  $("lockErr").textContent=
+   error?.message||
+   "Security Code verification ব্যর্থ হয়েছে।";
+ }finally{
+  button.disabled=false;
+  button.textContent="প্রবেশ করুন";
+ }
+}
+
+$("unlock")?.addEventListener("click",unlock);
+
+$("securityCode")?.addEventListener("input",()=>{
+ $("securityCode").value=
+  $("securityCode").value
+   .replace(/\D/g,"")
+   .slice(0,6);
+});
+
+$("securityCode")?.addEventListener("keydown",e=>{
+ if(e.key==="Enter")unlock();
+});
+
+async function enterChat(){
+ const name=$("username")
+  .value
+  .trim()
+  .replace(/\s+/g," ");
+
+ $("entryErr").textContent="";
+
+ if(name.length<2){
+  $("entryErr").textContent=
+   "কমপক্ষে ২ অক্ষরের username দিন।";
+  return;
+ }
+
+ if(name.length>30){
+  $("entryErr").textContent=
+   "Username সর্বোচ্চ ৩০ অক্ষর হতে পারে।";
+  return;
+ }
+
+ localStorage.setItem("pendingUsername",name);
+
+ const button=$("enterChat");
+ button.disabled=true;
+ button.textContent="প্রবেশ হচ্ছে...";
+
+ try{
+  await signInAnonymously(auth);
+ }catch(error){
+  console.error(error);
+  $("entryErr").textContent=
+   error?.message||
+   "Anonymous Authentication চালু নেই।";
+  button.disabled=false;
+  button.textContent="চ্যাট শুরু করুন";
+ }
+}
+
+$("enterChat")?.addEventListener("click",enterChat);
+
+$("username")?.addEventListener("keydown",e=>{
+ if(e.key==="Enter")enterChat();
+});
+
+const savedUsername=
+ localStorage.getItem("pendingUsername");
+
+if(savedUsername&&$("username")){
+ $("username").value=savedUsername;
+}
+
+onAuthStateChanged(auth,async user=>{
+ if(!user)return;
+
+ if(user.uid===ADMIN_UID){
+  isAdmin=true;
+  return;
+ }
+
+ isAdmin=false;
+ me=user;
+
+ const saved=JSON.parse(
+  localStorage.getItem("chatProfile")||"null"
+ );
+
+ const name=
+  saved?.name||
+  localStorage.getItem("pendingUsername")||
+  "User";
+
+ profile={
+  uid:user.uid,
+  name,
+  photo:saved?.photo||"",
+  online:true,
+  showOnline:saved?.showOnline!==false
+ };
+
+ try{
+  await update(
+   ref(db,"users/"+user.uid),
+   {
+    ...profile,
+    lastSeen:Date.now(),
+    deleted:false
+   }
+  );
+
+  onDisconnect(
+   ref(db,"users/"+user.uid)
+  ).update({
+   online:false,
+   lastSeen:Date.now()
+  });
+
+  await update(
+   ref(db,"users/"+user.uid),
+   {
+    online:true,
+    lastSeen:Date.now()
+   }
+  );
+ }catch(error){
+  console.error(error);
+ }
+
+ $("usernameEntry").classList.add("hidden");
+ $("lock").classList.add("hidden");
+ $("app").classList.remove("hidden");
+
+ listenUsers();
+ listenGroups();
+ renderList();
+});
+
+function listenUsers(){
+ if(usersOff)usersOff();
+
+ usersOff=onValue(
+  ref(db,"users"),
+  snapshot=>{
+   users=[];
+
+   snapshot.forEach(child=>{
+    const user=child.val();
+
+    if(
+     user&&
+     user.uid&&
+     user.uid!==me?.uid&&
+     !user.deleted
+    ){
+     users.push(user);
+    }
+   });
+
+   users.sort((a,b)=>
+    (a.name||"").localeCompare(
+     b.name||"",
+     "bn"
+    )
+   );
+
+   renderList();
+
+   if(selectedType==="user"&&selected){
+    const updated=users.find(
+     x=>x.uid===selected.uid
+    );
+
+    if(updated){
+     selected={
+      ...selected,
+      ...updated
+     };
+     updateChatHeader();
+    }
+   }
+  }
+ );
+}
+
+function listenGroups(){
+ if(groupsOff)groupsOff();
+
+ groupsOff=onValue(
+  ref(db,"groups"),
+  snapshot=>{
+   groups=[];
+
+   snapshot.forEach(child=>{
+    const g=child.val();
+
+    if(
+     g&&
+     g.members&&
+     g.members[me?.uid]&&
+     !g.deleted
+    ){
+     groups.push({
+      ...g,
+      id:child.key
+     });
+    }
+   });
+
+   renderList();
+  }
+ );
+}
+
+function avatarHTML(user){
+ if(user?.photo){
+  return `
+   <img
+    class="avatar"
+    src="${escapeHTML(user.photo)}"
+    alt=""
+   >
+  `;
+ }
+
+ return `
+  <div class="avatar">
+   ${escapeHTML(initials(user?.name))}
+  </div>
+ `;
+}
+
+$("search")?.addEventListener(
+ "input",
+ renderList
+);
+
+document.querySelectorAll(".tab")
+ .forEach(button=>{
+  button.addEventListener("click",()=>{
+   document.querySelectorAll(".tab")
+    .forEach(x=>x.classList.remove("active"));
+
+   button.classList.add("active");
+   activeTab=button.dataset.tab;
+
+   $("search").placeholder=
+    activeTab==="users"
+     ?"Search users..."
+     :"Search groups...";
+
+   renderList();
+  });
+ });
+
+function renderList(){
+ if(!me)return;
+
+ const q=$("search")
+  .value
+  .toLowerCase()
+  .trim();
+
+ const arr=
+  activeTab==="users"
+   ?users
+   :groups;
+
+ $("list").innerHTML="";
+
+ const filtered=arr.filter(x=>
+  (x.name||"")
+   .toLowerCase()
+   .includes(q)
+ );
+
+ filtered.forEach(item=>{
+  const el=document.createElement("div");
+  el.className="item";
+
+  const id=
+   activeTab==="users"
+    ?chatId(me.uid,item.uid)
+    :item.id;
+
+  const unreadCount=
+   Number(unread[id]||0);
+
+  const status=
+   activeTab==="users"
+    ?(
+      item.online&&
+      item.showOnline!==false
+       ?"● Online"
+       :"Offline"
+     )
+    :`${Object.keys(item.members||{}).length} members`;
+
+  el.innerHTML=`
+   ${avatarHTML(item)}
+
+   <div class="item-main">
+    <div class="item-name">
+     ${escapeHTML(item.name)}
+    </div>
+
+    <div class="item-sub">
+     ${escapeHTML(status)}
+    </div>
+   </div>
+
+   ${
+    unreadCount>0
+     ?`<div class="unread">
+        ${unreadCount>99?"99+":unreadCount}
+       </div>`
+     :""
+   }
+  `;
+
+  el.addEventListener("click",()=>{
+   openChat(
+    item,
+    activeTab==="users"
+     ?"user"
+     :"group"
+   );
+  });
+
+  $("list").appendChild(el);
+ });
+
+ if(!filtered.length){
+  $("list").innerHTML=
+   '<div class="empty">কিছু পাওয়া যায়নি</div>';
+ }
+}
+
+function updateChatHeader(){
+ if(!selected)return;
+
+ $("chatTitle").textContent=
+  selected.name||"Chat";
+
+ if(selectedType==="user"){
+  $("chatSub").textContent=
+   selected.online&&
+   selected.showOnline!==false
+    ?"● Online"
+    :"Offline";
+ }else{
+  $("chatSub").textContent=
+   `${Object.keys(selected.members||{}).length} members`;
+ }
+
+ const old=$("chatAvatar");
+ if(!old)return;
+
+ const temp=document.createElement("div");
+ temp.innerHTML=avatarHTML(selected);
+
+ const newAvatar=temp.firstElementChild;
+ newAvatar.id="chatAvatar";
+
+ old.replaceWith(newAvatar);
+}
+
+async function openChat(item,type){
+ selected=item;
+ selectedType=type;
+ currentReply=null;
+
+ clearReply();
+
+ $("app").classList.add("chat-open");
+
+ updateChatHeader();
+
+ const id=
+  type==="user"
+   ?chatId(me.uid,item.uid)
+   :item.id;
+
+ unread[id]=0;
+
+ localStorage.setItem(
+  "unreadChats",
+  JSON.stringify(unread)
+ );
+
+ renderList();
+ listenMessages();
+ listenTyping();
+ refreshMuteIcon();
+}
+
+async function isBlocked(uid){
+ if(!uid||!me)return false;
+
+ try{
+  const snap=await get(
+   ref(db,`blocks/${me.uid}/${uid}`)
+  );
+
+  return snap.exists()&&snap.val()===true;
+ }catch(error){
+  console.error(error);
+  return false;
+ }
+}
+
+async function isBlockedByUser(uid){
+ if(!uid||!me)return false;
+
+ try{
+  const snap=await get(
+   ref(db,`blocks/${uid}/${me.uid}`)
+  );
+
+  return snap.exists()&&snap.val()===true;
+ }catch(error){
+  console.error(error);
+  return false;
+ }
+}
+
+function listenMessages(){
+ if(messageOff){
+  messageOff();
+  messageOff=null;
+ }
+
+ if(!selected)return;
+
+ const id=
+  selectedType==="user"
+   ?chatId(me.uid,selected.uid)
+   :selected.id;
+
+ messageOff=onValue(
+  ref(db,"messages/"+id),
+  snapshot=>{
+   $("messages").innerHTML="";
+
+   if(!snapshot.exists()){
+    $("messages").innerHTML=
+     '<div class="empty">এখনও কোনো message নেই।</div>';
+    return;
+   }
+
+   snapshot.forEach(child=>{
+    renderMessage(
+     child.key,
+     child.val()
+    );
+   });
+
+   $("messages").scrollTop=
+    $("messages").scrollHeight;
+
+   if(selectedType==="user"){
+    markSeen(id);
+   }
+  }
+ );
+}
+
+function renderMessage(id,message){
+ const mine=message.senderId===me.uid;
+
+ const wrap=document.createElement("div");
+ wrap.className=
+  "message-wrap "+
+  (mine?"mine":"theirs");
+
+ const bubble=document.createElement("div");
+ bubble.className=
+  "bubble "+
+  (mine?"mine":"theirs");
+
+ let content="";
+
+ if(message.replyText){
+  content+=`
+   <div class="reply">
+    ${escapeHTML(message.replyText)}
+   </div>
+  `;
+ }
+
+ if(message.deleted){
+  content+=`
+   <div class="msg-deleted">
+    This message was deleted
+   </div>
+  `;
+ }else if(message.type==="image"){
+  content+=`
+   <img
+    class="msg-img"
+    src="${escapeHTML(message.url||"")}"
+    alt="image"
+   >
+  `;
+ }else{
+  content+=escapeHTML(message.text||"");
+ }
+
+ const status=mine
+  ?(message.seen?" ✓✓":" ✓")
+  :"";
+
+ content+=`
+  <span class="meta">
+   ${new Date(
+    message.createdAt||Date.now()
+   ).toLocaleTimeString([],{
+    hour:"2-digit",
+    minute:"2-digit"
+   })}
+   ${status}
+  </span>
+ `;
+
+ bubble.innerHTML=content;
+
+ bubble.addEventListener(
+  "contextmenu",
+  e=>{
+   e.preventDefault();
+   messageMenu(
+    id,
+    message,
+    mine
+   );
+  }
+ );
+
+ wrap.appendChild(bubble);
+ $("messages").appendChild(wrap);
+}
+
+$("composer")?.addEventListener(
+ "submit",
+ async e=>{
+  e.preventDefault();
+
+  const text=$("message")
+   .value
+   .trim();
+
+  if(!selected||!text)return;
+
+  if(selectedType==="user"){
+   if(await isBlocked(selected.uid)){
+    toast("আপনি এই user-কে block করেছেন।");
+    return;
+   }
+
+   if(await isBlockedByUser(selected.uid)){
+    toast("এই user আপনাকে block করেছে।");
+    return;
+   }
+  }
+
+  try{
+   await sendMessage({
+    type:"text",
+    text
+   });
+
+   $("message").value="";
+   stopTyping();
+  }catch(error){
+   console.error(error);
+   toast(
+    "Message পাঠানো যায়নি: "+
+    (error?.message||"unknown error")
+   );
+  }
+ }
+);
+
+async function sendMessage(message){
+ if(!me||!selected){
+  throw new Error("Chat নির্বাচন করুন।");
+ }
+
+ const id=
+  selectedType==="user"
+   ?chatId(me.uid,selected.uid)
+   :selected.id;
+
+ const messageRef=push(
+  ref(db,"messages/"+id)
+ );
+
+ const data={
+  id:messageRef.key,
+  ...message,
+  senderId:me.uid,
+  receiverId:
+   selectedType==="user"
+    ?selected.uid
+    :null,
+  groupId:
+   selectedType==="group"
+    ?selected.id
+    :null,
+  createdAt:Date.now(),
+  delivered:false,
+  seen:false,
+  replyText:
+   currentReply?.text||""
+ };
+
+ await set(messageRef,data);
+
+ currentReply=null;
+ clearReply();
+}
+
+async function markSeen(id){
+ try{
+  const snapshot=await get(
+   ref(db,"messages/"+id)
+  );
+
+  if(!snapshot.exists())return;
+
+  const updates={};
+
+  snapshot.forEach(child=>{
+   const message=child.val();
+
+   if(
+    message.receiverId===me.uid&&
+    !message.seen
+   ){
+    updates[
+     child.key+"/seen"
+    ]=true;
+   }
+  });
+
+  if(Object.keys(updates).length){
+   await update(
+    ref(db,"messages/"+id),
+    updates
+   );
+  }
+ }catch(error){
+  console.error(error);
+ }
+}
+
+$("emojiBtn")?.addEventListener(
+ "click",
+ ()=>{
+  const emojis=[
+   "😀","😂","😍","🥰","😘",
+   "😎","😭","😡","👍","❤️",
+   "🔥","🎉","🙏","👏","😊"
+  ];
+
+  const emoji=
+   emojis[
+    Math.floor(
+     Math.random()*emojis.length
+    )
+   ];
+
+  $("message").value+=
+   ($("message").value?" ":"")+
+   emoji;
+
+  $("message").focus();
+ }
+);
+
+$("imageBtn")?.addEventListener(
+ "click",
+ ()=>{
+  if(!selected){
+   toast("আগে একটি chat নির্বাচন করুন।");
+   return;
+  }
+
+  $("imageFile").click();
+ }
+);
+
+$("imageFile")?.addEventListener(
+ "change",
+ async()=>{
+  const file=$("imageFile").files[0];
+
+  if(!file||!selected)return;
+
+  if(file.size>5*1024*1024){
+   toast("Image 5MB-এর মধ্যে রাখুন।");
+   $("imageFile").value="";
+   return;
+  }
+
+  if(!file.type.startsWith("image/")){
+   toast("শুধু image file ব্যবহার করুন।");
+   $("imageFile").value="";
+   return;
+  }
+
+  try{
+   const safeName=file.name.replace(
+    /[^\w.-]/g,
+    "_"
+   );
+
+   const path=
+    `chatImages/${me.uid}/${Date.now()}_${safeName}`;
+
+   const fileRef=storageRef(
+    storage,
+    path
+   );
+
+   toast("Image upload হচ্ছে...");
+
+   await uploadBytes(
+    fileRef,
+    file
+   );
+
+   const url=await getDownloadURL(
+    fileRef
+   );
+
+   await sendMessage({
+    type:"image",
+    url
+   });
+
+   toast("Image sent");
+  }catch(error){
+   console.error(error);
+   toast(
+    "Image upload ব্যর্থ: "+
+    (error?.message||"unknown")
+   );
+  }
+
+  $("imageFile").value="";
+ }
+);
+
+$("message")?.addEventListener(
+ "input",
+ ()=>{
+  if(!selected||!me)return;
+
+  setTyping(true);
+
+  clearTimeout(typingTimer);
+
+  typingTimer=setTimeout(
+   stopTyping,
+   1200
+  );
+ }
+);
+
+function typingPath(){
+ if(!selected)return null;
+
+ const id=
+  selectedType==="user"
+   ?chatId(me.uid,selected.uid)
+   :selected.id;
+
+ return `typing/${id}/${me.uid}`;
+}
+
+async function setTyping(value){
+ const path=typingPath();
+ if(!path)return;
+
+ try{
+  await set(
+   ref(db,path),
+   value
+  );
+ }catch(error){
+  console.error(error);
+ }
+}
+
+async function stopTyping(){
+ clearTimeout(typingTimer);
+
+ const path=typingPath();
+ if(!path)return;
+
+ try{
+  await remove(ref(db,path));
+ }catch(error){
+  console.error(error);
+ }
+}
+
+function listenTyping(){
+ if(typingOff){
+  typingOff();
+  typingOff=null;
+ }
+
+ if(!selected)return;
+
+ const id=
+  selectedType==="user"
+   ?chatId(me.uid,selected.uid)
+   :selected.id;
+
+ typingOff=onValue(
+  ref(db,"typing/"+id),
+  snapshot=>{
+   let someone=false;
+
+   snapshot.forEach(child=>{
+    if(
+     child.key!==me.uid&&
+     child.val()===true
+    ){
+     someone=true;
+    }
+   });
+
+   $("typing").textContent=
+    someone?"typing...":"";
+  }
+ );
+}
+
+function messageMenu(id,message,mine){
+ let html=`
+  <button
+   id="replyMessage"
+   class="secondary"
+   style="width:100%;margin-bottom:8px"
+  >
+   ↩ Reply
+  </button>
+ `;
+
+ if(mine){
+  html+=`
+   <button
+    id="deleteMessage"
+    class="danger secondary"
+    style="width:100%;margin-bottom:8px"
+   >
+    🗑 Delete
+   </button>
+  `;
+ }
+
+ html+=`
+  <button
+   id="reportMessage"
+   class="secondary"
+   style="width:100%"
+  >
+   ⚠ Report
+  </button>
+ `;
+
+ openModal(
+  "Message",
+  html,
+  false
+ );
+
+ $("replyMessage").onclick=()=>{
+  currentReply=message;
+
+  $("replyPreview").textContent=
+   message.text||
+   (
+    message.type==="image"
+     ?"Image"
+     :"Message"
+   );
+
+  $("replyBar")
+   .classList.add("show");
+
+  closeModal();
+  $("message").focus();
+ };
+
+ const deleteBtn=$("deleteMessage");
+
+ if(deleteBtn){
+  deleteBtn.onclick=async()=>{
+   try{
+    const chat=
+     selectedType==="user"
+      ?chatId(
+       me.uid,
+       selected.uid
+      )
+      :selected.id;
+
+    await update(
+     ref(
+      db,
+      `messages/${chat}/${id}`
+     ),
+     {
+      deleted:true,
+      text:"",
+      url:""
+     }
+    );
+
+    closeModal();
+   }catch(error){
+    toast("Delete ব্যর্থ হয়েছে।");
+   }
+  };
+ }
+
+ $("reportMessage").onclick=async()=>{
+  try{
+   await push(
+    ref(db,"reports"),
+    {
+     type:"message",
+     messageId:id,
+     reporterId:me.uid,
+     reportedUserId:message.senderId,
+     createdAt:Date.now()
+    }
+   );
+
+   closeModal();
+   toast("Message reported");
+  }catch(error){
+   toast("Report ব্যর্থ হয়েছে।");
+  }
+ };
+}
+
+function clearReply(){
+ currentReply=null;
+
+ $("replyBar")
+  .classList.remove("show");
+
+ $("replyPreview").textContent="";
+}
+
+$("replyClose")?.addEventListener(
+ "click",
+ clearReply
+);
+
+$("profileBtn")?.addEventListener(
+ "click",
+ ()=>{
+  openModal(
+   "Profile",
+   `
+    <input
+     id="profileName"
+     class="field"
+     value="${escapeHTML(profile.name)}"
+     maxlength="30"
+     placeholder="Profile name"
+    >
+
+    <input
+     id="profilePhoto"
+     class="field"
+     value="${escapeHTML(profile.photo||"")}"
+     placeholder="Profile photo URL"
+    >
+
+    <label style="display:block;margin:8px 0">
+     <input
+      id="showOnline"
+      type="checkbox"
+      ${profile.showOnline!==false?"checked":""}
+     >
+     Online status দেখাবেন
+    </label>
+   `,
+   true
+  );
+
+  $("modalSave").onclick=async()=>{
+   const name=$("profileName")
+    .value
+    .trim()
+    .replace(/\s+/g," ");
+
+   if(name.length<2){
+    toast(
+     "Profile name কমপক্ষে ২ অক্ষর হতে হবে।"
+    );
+    return;
+   }
+
+   const data={
+    name,
+    photo:$("profilePhoto").value.trim(),
+    showOnline:$("showOnline").checked
+   };
+
+   profile={
+    ...profile,
+    ...data
+   };
+
+   localStorage.setItem(
+    "chatProfile",
+    JSON.stringify(profile)
+   );
+
+   localStorage.setItem(
+    "pendingUsername",
+    data.name
+   );
+
+   try{
+    await update(
+     ref(db,"users/"+me.uid),
+     data
+    );
+
+    closeModal();
+    toast("Profile updated");
+   }catch(error){
+    toast(
+     "Profile update ব্যর্থ হয়েছে।"
+    );
+   }
+  };
+ }
+);
+
+$("moreBtn")?.addEventListener(
+ "click",
+ async()=>{
+  if(!selected)return;
+
+  if(selectedType==="group"){
+   groupMenu();
+   return;
+  }
+
+  const blocked=await isBlocked(
+   selected.uid
+  );
+
+  openModal(
+   "Privacy",
+   `
+    <button
+     id="blockUser"
+     class="${blocked?"success-btn":"secondary"}"
+     style="width:100%;margin-bottom:8px"
+    >
+     ${blocked?"Unblock user":"Block user"}
+    </button>
+
+    <button
+     id="reportUser"
+     class="danger secondary"
+     style="width:100%"
+    >
+     ⚠ Report user
+    </button>
+   `,
+   false
+  );
+
+  $("blockUser").onclick=async()=>{
+   try{
+    if(blocked){
+     await remove(
+      ref(
+       db,
+       `blocks/${me.uid}/${selected.uid}`
+      )
+     );
+     toast("User unblocked");
+   }else{
+    await set(
+     ref(
+      db,
+      `blocks/${me.uid}/${selected.uid}`
+     ),
+     true
+    );
+    toast("User blocked");
+   }
+
+   closeModal();
+   }catch(error){
+    toast(
+     "Block operation ব্যর্থ হয়েছে।"
+    );
+   }
+  };
+
+  $("reportUser").onclick=async()=>{
+   try{
+    await push(
+     ref(db,"reports"),
+     {
+      type:"user",
+      reporterId:me.uid,
+      reportedUserId:selected.uid,
+      createdAt:Date.now()
+     }
+    );
+
+    closeModal();
+    toast("User reported");
+   }catch(error){
+    toast("Report ব্যর্থ হয়েছে।");
+   }
+  };
+ }
+);
+
+$("createGroupBtn")?.addEventListener(
+ "click",
+ ()=>{
+  if(!users.length){
+   toast(
+    "Group তৈরি করার জন্য অন্য user প্রয়োজন।"
+   );
+   return;
+  }
+
+  const userHTML=users.map(user=>`
+   <label class="member-row">
+    <input
+     type="checkbox"
+     value="${escapeHTML(user.uid)}"
+    >
+    ${avatarHTML(user)}
+    <div class="member-info">
+     <b>${escapeHTML(user.name)}</b>
+     <div class="small">
+      ${user.online?"Online":"Offline"}
+     </div>
+    </div>
+   </label>
+  `).join("");
+
+  openModal(
+   "Create Group",
+   `
+    <input
+     id="groupName"
+     class="field"
+     maxlength="50"
+     placeholder="Group name"
+    >
+
+    <input
+     id="groupPhoto"
+     class="field"
+     placeholder="Group photo URL (optional)"
+    >
+
+    <div class="small">
+     Members নির্বাচন করুন:
+    </div>
+
+    <div class="member-list">
+     ${userHTML}
+    </div>
+   `,
+   true
+  );
+
+  $("modalSave").onclick=async()=>{
+   const name=$("groupName")
+    .value
+    .trim();
+
+   if(name.length<2){
+    toast(
+     "Group name কমপক্ষে ২ অক্ষর হতে হবে।"
+    );
+    return;
+   }
+
+   const members={
+    [me.uid]:true
+   };
+
+   document
+    .querySelectorAll(
+     '#modalBody input[type="checkbox"]'
+    )
+    .forEach(box=>{
+     if(box.checked)
+      members[box.value]=true;
+    });
+
+   try{
+    const groupRef=push(
+     ref(db,"groups")
+    );
+
+    await set(
+     groupRef,
+     {
+      id:groupRef.key,
+      name,
+      photo:$("groupPhoto")
+       .value
+       .trim(),
+      ownerId:me.uid,
+      adminId:me.uid,
+      members,
+      createdAt:Date.now()
+     }
+    );
+
+    closeModal();
+    toast("Group তৈরি হয়েছে");
+
+    activeTab="groups";
+
+    document
+     .querySelectorAll(".tab")
+     .forEach(x=>{
+      x.classList.toggle(
+       "active",
+       x.dataset.tab==="groups"
+      );
+     });
+
+    renderList();
+   }catch(error){
+    console.error(error);
+    toast(
+     "Group তৈরি ব্যর্থ: "+
+     (error?.message||"unknown")
+    );
+   }
+  };
+ }
+);
+
+function groupMenu(){
+ if(!selected)return;
+
+ const groupAdmin=
+  selected.adminId===me.uid||
+  selected.ownerId===me.uid;
+
+ let html=`
+  <button
+   id="groupInfo"
+   class="secondary"
+   style="width:100%;margin-bottom:8px"
+  >
+   Group Info
+  </button>
+ `;
+
+ if(groupAdmin){
+  html+=`
+   <button
+    id="groupManage"
+    class="secondary"
+    style="width:100%;margin-bottom:8px"
+   >
+    Manage Members
+   </button>
+
+   <button
+    id="groupEdit"
+    class="secondary"
+    style="width:100%;margin-bottom:8px"
+   >
+    Edit Group
+   </button>
+  `;
+ }
+
+ html+=`
+  <button
+   id="groupLeave"
+   class="danger secondary"
+   style="width:100%"
+  >
+   Leave Group
+  </button>
+ `;
+
+ openModal(
+  "Group",
+  html,
+  false
+ );
+
+ $("groupInfo").onclick=()=>{
+  const memberCount=
+   Object.keys(
+    selected.members||{}
+   ).length;
+
+  openModal(
+   "Group Info",
+   `
+    <div style="text-align:center">
+     ${avatarHTML(selected)}
+     <h3>${escapeHTML(selected.name)}</h3>
+     <div class="small">
+      ${memberCount} members
+     </div>
+    </div>
+   `,
+   false
+  );
+ };
+
+ $("groupManage")?.addEventListener(
+  "click",
+  manageGroupMembers
+ );
+
+ $("groupEdit")?.addEventListener(
+  "click",
+  editGroup
+ );
+
+ $("groupLeave").onclick=async()=>{
+  try{
+   await remove(
+    ref(
+     db,
+     `groups/${selected.id}/members/${me.uid}`
+    )
+   );
+
+   closeModal();
+
+   selected=null;
+
+   $("app")
+    .classList.remove("chat-open");
+
+   toast("Group থেকে বের হয়ে গেছেন।");
+  }catch(error){
+   toast("Group leave ব্যর্থ হয়েছে।");
+  }
+ };
+}
+
+function manageGroupMembers(){
+ const members=selected.members||{};
+ let html="";
+
+ Object.keys(members).forEach(uid=>{
+  const user=users.find(
+   x=>x.uid===uid
+  );
+
+  const name=user?.name||uid;
+  const isOwner=uid===selected.ownerId;
+
+  html+=`
+   <div class="member-row">
+    ${avatarHTML(user||{name})}
+
+    <div class="member-info">
+     <b>${escapeHTML(name)}</b>
+
+     ${
+      isOwner
+       ?'<div class="small">Owner</div>'
+       :""
+     }
+    </div>
+
+    ${
+     !isOwner
+      ?`
+       <button
+        class="danger secondary"
+        data-remove-member="${escapeHTML(uid)}"
+       >
+        Remove
+       </button>
+      `
+      :""
+    }
+   </div>
+  `;
+ });
+
+ const available=users.filter(
+  x=>!members[x.uid]
+ );
+
+ html+=`
+  <hr>
+  <div class="small">Add members</div>
+ `;
+
+ available.forEach(user=>{
+  html+=`
+   <label class="member-row">
+    <input
+     type="checkbox"
+     value="${escapeHTML(user.uid)}"
+     data-add-member
+    >
+    ${avatarHTML(user)}
+    <div class="member-info">
+     ${escapeHTML(user.name)}
+    </div>
+   </label>
+  `;
+ });
+
+ openModal(
+  "Manage Members",
+  `<div class="member-list">${html}</div>`,
+  true
+ );
+
+ document
+  .querySelectorAll("[data-remove-member]")
+  .forEach(button=>{
+   button.onclick=async()=>{
+    const uid=
+     button.dataset.removeMember;
+
+    try{
+     await remove(
+      ref(
+       db,
+       `groups/${selected.id}/members/${uid}`
+      )
+     );
+
+     toast("Member removed");
+     closeModal();
+    }catch(error){
+     toast(
+      "Member remove ব্যর্থ হয়েছে।"
+     );
+    }
+   };
+  });
+
+ $("modalSave").onclick=async()=>{
+  const updates={};
+
+  document
+   .querySelectorAll(
+    "[data-add-member]:checked"
+   )
+   .forEach(box=>{
+    updates[
+     `groups/${selected.id}/members/${box.value}`
+    ]=true;
+   });
+
+  try{
+   if(Object.keys(updates).length){
+    await update(
+     ref(db),
+     updates
+    );
+   }
+
+   closeModal();
+   toast("Members updated");
+  }catch(error){
+   toast(
+    "Members update ব্যর্থ হয়েছে।"
+   );
+  }
+ };
+}
+
+function editGroup(){
+ openModal(
+  "Edit Group",
+  `
+   <input
+    id="editGroupName"
+    class="field"
+    maxlength="50"
+    value="${escapeHTML(selected.name||"")}"
+    placeholder="Group name"
+   >
+
+   <input
+    id="editGroupPhoto"
+    class="field"
+    value="${escapeHTML(selected.photo||"")}"
+    placeholder="Group photo URL"
+   >
+  `,
+  true
+ );
+
+ $("modalSave").onclick=async()=>{
+  const name=$("editGroupName")
+   .value
+   .trim();
+
+  if(name.length<2){
+   toast("Group name সঠিক নয়।");
+   return;
+  }
+
+  try{
+   const photo=$("editGroupPhoto")
+    .value
+    .trim();
+
+   await update(
+    ref(
+     db,
+     "groups/"+selected.id
+    ),
+    {
+     name,
+     photo
+    }
+   );
+
+   selected={
+    ...selected,
+    name,
+    photo
+   };
+
+   updateChatHeader();
+   closeModal();
+   toast("Group updated");
+  }catch(error){
+   toast(
+    "Group update ব্যর্থ হয়েছে।"
+   );
+  }
+}
+
+$("muteBtn")?.addEventListener(
+ "click",
+ ()=>{
+  if(!selected)return;
+
+  const id=
+   selectedType==="user"
+    ?chatId(
+     me.uid,
+     selected.uid
+    )
+    :selected.id;
+
+  muted[id]=!muted[id];
+
+  localStorage.setItem(
+   "mutedChats",
+   JSON.stringify(muted)
+  );
+
+  $("muteBtn").textContent=
+   muted[id]?"🔕":"🔔";
+
+  toast(
+   muted[id]
+    ?"Notification muted"
+    :"Notification unmuted"
+  );
+ }
+);
+
+function openModal(
+ title,
+ body,
+ saveVisible=true
+){
+ $("modalTitle").textContent=title;
+ $("modalBody").innerHTML=body;
+
+ $("modal").classList.remove("hidden");
+
+ $("modalSave").style.display=
+  saveVisible
+   ?"block"
+   :"none";
+
+ $("modalSave").textContent="Save";
+ $("modalSave").disabled=false;
+}
+
+function closeModal(){
+ $("modal").classList.add("hidden");
+ $("modalSave").onclick=null;
+ $("modalSave").textContent="Save";
+ $("modalSave").disabled=false;
+}
+
+$("modalCancel")?.addEventListener(
+ "click",
+ closeModal
+);
+
+$("modal")?.addEventListener(
+ "click",
+ e=>{
+  if(e.target===$("modal"))
+   closeModal();
+ }
+);
+
+$("back")?.addEventListener(
+ "click",
+ ()=>{
+  $("app").classList.remove("chat-open");
+
+  stopTyping();
+
+  selected=null;
+  selectedType=null;
+
+  clearReply();
+
+  if(messageOff){
+   messageOff();
+   messageOff=null;
+  }
+
+  if(typingOff){
+   typingOff();
+   typingOff=null;
+  }
+ }
+);
+
+$("adminLoginOpen")?.addEventListener(
+ "click",
+ ()=>{
+  openModal(
+   "Admin Login",
+   `
+    <input
+     id="adminEmail"
+     class="field"
+     type="email"
+     autocomplete="username"
+     placeholder="Admin Email"
+    >
+
+    <input
+     id="adminPassword"
+     class="field"
+     type="password"
+     autocomplete="current-password"
+     placeholder="Admin Password"
+    >
+
+    <div
+     id="adminLoginError"
+     class="err"
+     style="min-height:22px"
+    ></div>
+   `,
+   true
+  );
+
+  const saveButton=$("modalSave");
+
+  if(!saveButton){
+   console.error(
+    "modalSave button not found"
+   );
+   return;
+  }
+
+  saveButton.textContent="Login";
+
+  saveButton.onclick=async()=>{
+   const email=
+    $("adminEmail")?.value.trim()||"";
+
+   const password=
+    $("adminPassword")?.value||"";
+
+   const errorBox=
+    $("adminLoginError");
+
+   if(errorBox)
+    errorBox.textContent="";
+
+   if(!email){
+    if(errorBox)
+     errorBox.textContent=
+      "Admin Email দিন.";
+
+    $("adminEmail")?.focus();
+    return;
+   }
+
+   if(!password){
+    if(errorBox)
+     errorBox.textContent=
+      "Admin Password দিন.";
+
+    $("adminPassword")?.focus();
+    return;
+   }
+
+   saveButton.disabled=true;
+   saveButton.textContent=
+    "Login হচ্ছে...";
+
+   try{
+    const result=
+     await signInWithEmailAndPassword(
+      auth,
+      email,
+      password
+     );
+
+    if(result.user.uid!==ADMIN_UID){
+     await signOut(auth);
+
+     if(errorBox)
+      errorBox.textContent=
+       "Login হয়েছে, কিন্তু এই account-এর Admin permission নেই.";
+
+     return;
+    }
+
+    isAdmin=true;
+
+    closeModal();
+
+    $("lock")?.classList.add("hidden");
+    $("usernameEntry")?.classList.add("hidden");
+    $("app")?.classList.add("hidden");
+    $("adminPanel")?.classList.remove("hidden");
+
+    loadAdmin();
+
+    toast("Admin Login সফল হয়েছে");
+   }catch(error){
+    console.error(
+     "ADMIN LOGIN ERROR:",
+     error
+    );
+
+    if(errorBox)
+     errorBox.textContent=
+      friendlyAuthError(error);
+   }finally{
+    saveButton.disabled=false;
+    saveButton.textContent="Login";
+   }
+  };
+
+  $("adminEmail")?.addEventListener(
+   "keydown",
+   e=>{
+    if(e.key==="Enter")
+     $("adminPassword")?.focus();
+   }
+  );
+
+  $("adminPassword")?.addEventListener(
+   "keydown",
+   e=>{
+    if(e.key==="Enter")
+     saveButton.click();
+   }
+  );
+ }
+);
+
+let adminUsersData=[];
+
+function loadAdmin(){
+ loadAdminUsers();
+ loadAdminGroups();
+ loadAdminReports();
+}
+
+function loadAdminUsers(){
+ if(adminUsersOff)adminUsersOff();
+
+ adminUsersOff=onValue(
+  ref(db,"users"),
+  snapshot=>{
+   adminUsersData=[];
+
+   snapshot.forEach(child=>{
+    const user=child.val();
+    if(user)
+     adminUsersData.push(user);
+   });
+
+   renderAdminUsers();
+  }
+ );
+}
+
+$("adminUserSearch")?.addEventListener(
+ "input",
+ renderAdminUsers
+);
+
+function renderAdminUsers(){
+ const q=$("adminUserSearch")
+  .value
+  .toLowerCase()
+  .trim();
+
+ const list=adminUsersData.filter(
+  user=>
+   (user.name||"")
+    .toLowerCase()
+    .includes(q)||
+   (user.uid||"")
+    .toLowerCase()
+    .includes(q)
+ );
+
+ $("adminUsers").innerHTML="";
+
+ list.forEach(user=>{
+  const row=document.createElement("div");
+  row.className="admin-row";
+
+  const online=user.online===true;
+
+  row.innerHTML=`
+   <div style="min-width:0">
+    <b>
+     ${escapeHTML(user.name||"User")}
+    </b>
+
+    <div class="small">
+     ${escapeHTML(user.uid||"")}
+    </div>
+
+    <span class="
+     status-badge
+     ${online?"status-online":"status-offline"}
+    ">
+     ${online?"ONLINE":"OFFLINE"}
+    </span>
+   </div>
+
+   <div class="admin-actions">
+    <button
+     class="secondary"
+     data-admin-block
+    >
+     Block
+    </button>
+
+    <button
+     class="danger secondary"
+     data-admin-delete
+    >
+     Delete
+    </button>
+   </div>
+  `;
+
+  row.querySelector(
+   "[data-admin-block]"
+  ).onclick=async()=>{
+   try{
+    await set(
+     ref(
+      db,
+      `adminBlocks/${user.uid}`
+     ),
+     true
+    );
+
+    toast("User blocked by Admin");
+   }catch(error){
+    toast("Block failed");
+   }
+  };
+
+  row.querySelector(
+   "[data-admin-delete]"
+  ).onclick=async()=>{
+   if(
+    !confirm(
+     "এই user's profile delete/disable করবেন?"
+    )
+   )return;
+
+   try{
+    await update(
+     ref(
+      db,
+      `users/${user.uid}`
+     ),
+     {
+      deleted:true,
+      online:false,
+      deletedAt:Date.now()
+     }
+    );
+
+    toast("User profile disabled");
+   }catch(error){
+    toast("Delete failed");
+   }
+  };
+
+  $("adminUsers").appendChild(row);
+ });
+
+ if(!list.length){
+  $("adminUsers").innerHTML=
+   '<div class="small">No users found.</div>';
+ }
+}
+
+function loadAdminGroups(){
+ if(adminGroupsOff)adminGroupsOff();
+
+ adminGroupsOff=onValue(
+  ref(db,"groups"),
+  snapshot=>{
+   $("adminGroups").innerHTML="";
+
+   snapshot.forEach(child=>{
+    const group=child.val();
+
+    const row=document.createElement("div");
+    row.className="admin-row";
+
+    const count=
+     Object.keys(group.members||{}).length;
+
+    row.innerHTML=`
+     <div>
+      <b>
+       ${escapeHTML(group.name||"Group")}
+      </b>
+
+      <div class="small">
+       ${count} members
+      </div>
+
+      <div class="small">
+       Owner:
+       ${escapeHTML(group.ownerId||"")}
+      </div>
+     </div>
+
+     <button
+      class="danger secondary"
+     >
+      Delete
+     </button>
+    `;
+
+    row.querySelector("button")
+     .onclick=async()=>{
+      if(
+       !confirm(
+        "এই group permanently remove করবেন?"
+       )
+      )return;
+
+      try{
+       await update(
+        ref(
+         db,
+         `groups/${child.key}`
+        ),
+        {
+         deleted:true,
+         deletedAt:Date.now()
+        }
+       );
+
+       toast("Group disabled");
+      }catch(error){
+       toast("Group delete failed");
+      }
+     };
+
+    $("adminGroups")
+     .appendChild(row);
+   });
+
+   if(!$("adminGroups").children.length){
+    $("adminGroups").innerHTML=
+     '<div class="small">No groups.</div>';
+   }
+  }
+ );
+}
+
+function loadAdminReports(){
+ if(adminReportsOff)adminReportsOff();
+
+ adminReportsOff=onValue(
+  ref(db,"reports"),
+  snapshot=>{
+   $("adminReports").innerHTML="";
+
+   snapshot.forEach(child=>{
+    const report=child.val();
+
+    const row=document.createElement("div");
+    row.className="admin-row";
+
+    row.innerHTML=`
+     <div style="min-width:0">
+      <b>
+       ${escapeHTML(report.type||"Report")}
+      </b>
+
+      <div class="small">
+       Reporter:
+       ${escapeHTML(report.reporterId||"")}
+      </div>
+
+      <div class="small">
+       Reported:
+       ${escapeHTML(report.reportedUserId||"")}
+      </div>
+
+      <div class="small">
+       ${
+        report.createdAt
+         ?new Date(
+          report.createdAt
+         ).toLocaleString()
+         :""
+       }
+      </div>
+     </div>
+
+     <button
+      class="danger secondary"
+     >
+      Resolve
+     </button>
+    `;
+
+    row.querySelector("button")
+     .onclick=async()=>{
+      try{
+       await remove(
+        ref(
+         db,
+         "reports/"+child.key
+        )
+       );
+
+       toast("Report resolved");
+      }catch(error){
+       toast(
+        "Report resolve failed"
+       );
+      }
+     };
+
+    $("adminReports")
+     .appendChild(row);
+   });
+
+   if(!$("adminReports").children.length){
+    $("adminReports").innerHTML=
+     '<div class="small">No reports.</div>';
+   }
+  }
+ );
+}
+
+$("newSecurityCode")?.addEventListener(
+ "input",
+ ()=>{
+  $("newSecurityCode").value=
+   $("newSecurityCode")
+    .value
+    .replace(/\D/g,"")
+    .slice(0,6);
+ }
+);
+
+$("changeSecurityCode")?.addEventListener(
+ "click",
+ async()=>{
+  const code=$("newSecurityCode")
+   .value
+   .replace(/\D/g,"");
+
+  const msg=$("codeChangeMsg");
+
+  msg.textContent="";
+
+  if(code.length!==6){
+   msg.textContent=
+    "ঠিক ৬ সংখ্যার code দিন.";
+   msg.style.color="#dc2626";
+   return;
+  }
+
+  const button=$("changeSecurityCode");
+
+  button.disabled=true;
+  button.textContent=
+   "পরিবর্তন হচ্ছে...";
+
+  try{
+   const result=
+    await changeSecurityCode({
+     code
+    });
+
+   if(result.data?.success){
+    $("newSecurityCode").value="";
+    msg.textContent=
+     "Security Code সফলভাবে পরিবর্তন হয়েছে.";
+    msg.style.color="#16a34a";
+   }else{
+    msg.textContent=
+     result.data?.message||
+     "Security Code পরিবর্তন করা যায়নি.";
+    msg.style.color="#dc2626";
+   }
+  }catch(error){
+   console.error(error);
+
+   msg.textContent=
+    error?.message||
+    "Security Code পরিবর্তন ব্যর্থ হয়েছে.";
+
+   msg.style.color="#dc2626";
+  }finally{
+   button.disabled=false;
+   button.textContent=
+    "Security Code পরিবর্তন";
+  }
+ }
+);
+
+$("adminLogout")?.addEventListener(
+ "click",
+ async()=>{
+  try{
+   await signOut(auth);
+  }catch(error){
+   console.error(error);
+  }
+
+  isAdmin=false;
+
+  if(adminUsersOff){
+   adminUsersOff();
+   adminUsersOff=null;
+  }
+
+  if(adminGroupsOff){
+   adminGroupsOff();
+   adminGroupsOff=null;
+  }
+
+  if(adminReportsOff){
+   adminReportsOff();
+   adminReportsOff=null;
+  }
+
+  $("adminPanel")
+   .classList.add("hidden");
+
+  $("app")
+   .classList.add("hidden");
+
+  $("usernameEntry")
+   .classList.add("hidden");
+
+  $("lock")
+   .classList.remove("hidden");
+
+  $("securityCode").value="";
+});
+
+window.addEventListener(
+ "online",
+ async()=>{
+  if(me){
+   try{
+    await update(
+     ref(db,"users/"+me.uid),
+     {
+      online:true,
+      lastSeen:Date.now()
+     }
+    );
+   }catch(error){}
+  }
+ }
+);
+
+window.addEventListener(
+ "offline",
+ async()=>{
+  if(me){
+   try{
+    await update(
+     ref(db,"users/"+me.uid),
+     {
+      online:false,
+      lastSeen:Date.now()
+     }
+    );
+   }catch(error){}
+  }
+ }
+);
+
+function refreshMuteIcon(){
+ if(!selected)return;
+
+ const id=
+  selectedType==="user"
+   ?chatId(
+    me.uid,
+    selected.uid
+   )
+   :selected.id;
+
+ $("muteBtn").textContent=
+  muted[id]?"🔕":"🔔";
+}
+
+setInterval(()=>{
+ if(selected){
+  refreshMuteIcon();
+  updateChatHeader();
+ }
+},3000);
+
+$("securityCode")?.focus();
+</script>
